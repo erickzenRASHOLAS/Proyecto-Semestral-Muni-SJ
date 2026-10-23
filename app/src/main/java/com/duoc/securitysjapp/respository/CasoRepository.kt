@@ -14,4 +14,6 @@ object CasoRepository {
     }
 
     fun getAll(): List<Caso> = casos.toList()
+
+    fun getById(id: Long): Caso? = casos.find { it.id == id }
 }
