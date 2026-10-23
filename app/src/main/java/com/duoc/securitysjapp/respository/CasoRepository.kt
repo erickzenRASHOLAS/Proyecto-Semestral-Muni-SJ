@@ -2,7 +2,7 @@ package com.duoc.securitysjapp.respository
 
 import com.duoc.securitysjapp.model.Caso
 
-class CasoRepository {
+object CasoRepository {
 
     private val casos = mutableListOf<Caso>()
     private var nextId = 1L

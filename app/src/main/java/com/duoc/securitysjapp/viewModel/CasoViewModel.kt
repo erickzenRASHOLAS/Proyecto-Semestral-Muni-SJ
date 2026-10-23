@@ -10,7 +10,7 @@ import com.duoc.securitysjapp.respository.CasoRepository
 
 class CasoViewModel : ViewModel() {
 
-    private val repository = CasoRepository()
+    private val repository = CasoRepository
 
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)

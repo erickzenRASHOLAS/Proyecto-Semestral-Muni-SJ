@@ -9,9 +9,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.securitysjapp.ui.NuevoCasoScreen
+import com.duoc.securitysjapp.ui.ListaCasosScreen
 import com.duoc.securitysjapp.ui.theme.SecuritySJAppTheme
-import com.duoc.securitysjapp.viewModel.CasoViewModel
+import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,9 +23,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White,
                 ) {
-                    val casoViewModel: CasoViewModel = viewModel()
-                    NuevoCasoScreen(
-                        viewModel = casoViewModel,
+                    val listaCasosViewModel: ListaCasosViewModel = viewModel()
+                    ListaCasosScreen(
+                        viewModel = listaCasosViewModel,
                         onNavigateBack = { finish() },
                     )
                 }

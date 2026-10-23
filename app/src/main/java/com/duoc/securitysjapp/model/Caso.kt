@@ -6,4 +6,5 @@ data class Caso(
     val descripcion: String,
     val ubicacion: String,
     val prioridad: String,
+    val fechaCreacionMillis: Long = System.currentTimeMillis(),
 )
