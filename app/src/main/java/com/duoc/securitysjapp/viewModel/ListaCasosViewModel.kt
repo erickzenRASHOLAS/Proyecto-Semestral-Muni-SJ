@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.duoc.securitysjapp.model.Caso
-import com.duoc.securitysjapp.respository.CasoRepository
+import com.duoc.securitysjapp.repository.CasoRepository
 
 class ListaCasosViewModel : ViewModel() {
 

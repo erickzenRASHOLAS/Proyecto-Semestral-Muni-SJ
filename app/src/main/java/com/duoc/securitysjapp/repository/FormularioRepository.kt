@@ -1,4 +1,4 @@
-package com.duoc.securitysjapp.respository
+package com.duoc.securitysjapp.repository
 
 
 import com.duoc.securitysjapp.model.FormularioModel
