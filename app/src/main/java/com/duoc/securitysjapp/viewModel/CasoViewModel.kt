@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.duoc.securitysjapp.model.Caso
 import com.duoc.securitysjapp.model.CasoForm
-import com.duoc.securitysjapp.respository.CasoRepository
+import com.duoc.securitysjapp.repository.CasoRepository
 
 class CasoViewModel : ViewModel() {
 

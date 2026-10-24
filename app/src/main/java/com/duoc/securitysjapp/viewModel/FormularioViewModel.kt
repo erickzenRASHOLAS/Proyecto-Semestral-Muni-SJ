@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.duoc.securitysjapp.model.FormularioModel
 import com.duoc.securitysjapp.model.MensajesError
-import com.duoc.securitysjapp.respository.FormularioRepository
+import com.duoc.securitysjapp.repository.FormularioRepository
 
 class FormularioViewModel : ViewModel() {
     private val repository = FormularioRepository()
