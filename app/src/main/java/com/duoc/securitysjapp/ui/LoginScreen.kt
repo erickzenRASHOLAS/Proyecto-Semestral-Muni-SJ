@@ -8,7 +8,11 @@ import androidx.compose.ui.unit.dp
 import com.duoc.securitysjapp.viewModel.UsuarioFormViewModel
 
 @Composable
-fun LoginScreen(viewModel: UsuarioFormViewModel, onLoginExitoso: () -> Unit) {
+fun LoginScreen(
+    viewModel: UsuarioFormViewModel,
+    onLoginExitoso: () -> Unit,
+    onIrARegistro: () -> Unit
+) {
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     val loginEstado by viewModel.loginExitoso.collectAsState()
@@ -58,6 +62,10 @@ fun LoginScreen(viewModel: UsuarioFormViewModel, onLoginExitoso: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Entrar")
+        }
+
+        TextButton(onClick = onIrARegistro) {
+            Text("¿No tienes cuenta? Regístrate aquí")
         }
     }
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
 }
 
 android {
@@ -38,13 +39,15 @@ android {
 dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
-
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:2.11.4")
 
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.room:room-runtime:2.7.2")
+    implementation("androidx.room:room-ktx:2.7.2")
+    ksp("androidx.room:room-compiler:2.7.2")
+
     //¿que hace?¿porque sale rojo?
     // kapt("androidx.room:room-compiler:2.6.1")
 
