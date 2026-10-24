@@ -12,4 +12,7 @@ interface UsuarioDao {
     //Limit 1 para que se detenga en el primer registro
     @Query("SELECT * FROM usuarios WHERE correo = :correo AND contrasena = :contrasena LIMIT 1")
     suspend fun iniciarSesion(correo: String, contrasena: String): Usuario?
+
+    @Query("SELECT * FROM usuarios WHERE id = :id")
+    suspend fun obtenerUsuarioPorId(id: Int): Usuario?
 }
