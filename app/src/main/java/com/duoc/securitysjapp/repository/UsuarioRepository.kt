@@ -12,4 +12,9 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
     suspend fun iniciarSesion(correo: String, contrasena: String): Usuario? {
         return usuarioDao.iniciarSesion(correo, contrasena)
     }
+
+    suspend fun obtenerUsuarioPorId(id: Int): Usuario? {
+        return usuarioDao.obtenerUsuarioPorId(id)
+    }
+
 }
