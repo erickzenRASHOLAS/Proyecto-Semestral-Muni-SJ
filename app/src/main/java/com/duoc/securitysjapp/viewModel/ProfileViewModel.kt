@@ -1,8 +1,9 @@
-package com.duoc.securitysjapp.viewmodel
+package com.duoc.securitysjapp.viewModel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.duoc.securitysjapp.respository.UsuarioRepository
+import com.duoc.securitysjapp.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,15 +19,27 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _rolUsuario = MutableStateFlow("Vecino")
     val rolUsuario: StateFlow<String> = _rolUsuario
 
-    // Llama a esta función cuando se abre la pantalla de perfil
+    // Se llama cuando se abre la pantalla de perfil
     fun cargarPerfil(usuarioId: Int) {
         viewModelScope.launch {
             val usuario = repository.obtenerUsuarioPorId(usuarioId)
-            usuario?.let {
-                _nombreUsuario.value = it.nombreCompleto
-                _correoUsuario.value = it.correo
-                _rolUsuario.value = it.rol ?: "Vecino"
+            if (usuario != null) {
+                _nombreUsuario.value = usuario.nombreCompleto
+                _correoUsuario.value = usuario.correo
+                _rolUsuario.value = usuario.rol
             }
         }
+    }
+}
+
+class ProfileViewModelFactory(
+    private val repository: UsuarioRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            return ProfileViewModel(repository) as T
+        }
+        throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }
 }

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.Usuario
-import com.duoc.securitysjapp.respository.UsuarioRepository
+import com.duoc.securitysjapp.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,9 +17,20 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _registroExitoso = MutableStateFlow<Boolean?>(null)
     val registroExitoso: StateFlow<Boolean?> = _registroExitoso
 
-    fun registrarUsuario(correo: String, contrasena: String) {
+    // Id del usuario que inició sesión (se necesita para cargar su perfil)
+    private val _usuarioId = MutableStateFlow(0)
+    val usuarioId: StateFlow<Int> = _usuarioId
+
+    fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = "Usuario") {
         viewModelScope.launch {
-            repository.registrarUsuario(Usuario(correo = correo, contrasena = contrasena))
+            repository.registrarUsuario(
+                Usuario(
+                    nombreCompleto = nombreCompleto,
+                    correo = correo,
+                    contrasena = contrasena,
+                    rol = rol
+                )
+            )
             _registroExitoso.value = true
         }
     }
@@ -27,6 +38,7 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     fun iniciarSesion(correo: String, contrasena: String) {
         viewModelScope.launch {
             val usuario = repository.iniciarSesion(correo, contrasena)
+            _usuarioId.value = usuario?.id ?: 0
             _loginExitoso.value = usuario != null
         }
     }
@@ -37,12 +49,14 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     }
 }
 
-class UsuarioFormViewModelFactory(private val repository: UsuarioRepository) : ViewModelProvider.Factory {
+class UsuarioFormViewModelFactory(
+    private val repository: UsuarioRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UsuarioFormViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
             return UsuarioFormViewModel(repository) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }
 }
