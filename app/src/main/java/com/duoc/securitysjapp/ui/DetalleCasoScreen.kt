@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,8 +40,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.duoc.securitysjapp.model.Caso
+import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulNavActivo
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
 import com.duoc.securitysjapp.ui.theme.FondoCampoFormulario
@@ -59,14 +61,11 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleCasoScreen(
-    casoId: Long,
+    viewModel: DetalleCasoViewModel,
     onNavigateBack: () -> Unit = {},
-    viewModel: DetalleCasoViewModel = viewModel(
-        key = "detalleCaso_$casoId",
-        factory = DetalleCasoViewModel.provideFactory(casoId),
-    ),
+    onCasoCerrado: (Long) -> Unit = {},
 ) {
-    LaunchedEffect(casoId) {
+    LaunchedEffect(Unit) {
         viewModel.cargarCaso()
     }
 
@@ -114,6 +113,7 @@ fun DetalleCasoScreen(
         } else {
             ContenidoDetalleCaso(
                 caso = caso,
+                onCerrarCaso = { viewModel.cerrarCaso { onCasoCerrado(caso.id) } },
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -123,6 +123,7 @@ fun DetalleCasoScreen(
 @Composable
 private fun ContenidoDetalleCaso(
     caso: Caso,
+    onCerrarCaso: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -223,6 +224,28 @@ private fun ContenidoDetalleCaso(
                     color = TextoUbicacionCaso,
                     fontSize = 15.sp,
                     lineHeight = 22.sp,
+                )
+            }
+        }
+
+        // Solo se puede cerrar un caso que aún no está cerrado
+        if (caso.estado != "Cerrado") {
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = onCerrarCaso,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AzulBotonGuardar,
+                    contentColor = Color.White,
+                ),
+            ) {
+                Text(
+                    text = "Cerrar caso",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
                 )
             }
         }

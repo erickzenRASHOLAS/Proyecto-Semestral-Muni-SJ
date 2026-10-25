@@ -49,6 +49,7 @@ import com.duoc.securitysjapp.viewModel.CasoViewModel
 @Composable
 fun NuevoCasoScreen(
     viewModel: CasoViewModel,
+    usuarioId: Int,
     onNavigateBack: () -> Unit = {},
 ) {
     val campoColors = OutlinedTextFieldDefaults.colors(
@@ -65,11 +66,17 @@ fun NuevoCasoScreen(
 
     if (viewModel.guardadoExitoso) {
         AlertDialog(
-            onDismissRequest = { viewModel.consumirGuardadoExitoso() },
+            onDismissRequest = {
+                viewModel.consumirGuardadoExitoso()
+                onNavigateBack()
+            },
             title = { Text("Caso guardado") },
             text = { Text("El caso se registró correctamente.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.consumirGuardadoExitoso() }) {
+                TextButton(onClick = {
+                    viewModel.consumirGuardadoExitoso()
+                    onNavigateBack()
+                }) {
                     Text("OK")
                 }
             },
@@ -163,7 +170,7 @@ fun NuevoCasoScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = { viewModel.guardar() },
+                onClick = { viewModel.guardar(usuarioId) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),

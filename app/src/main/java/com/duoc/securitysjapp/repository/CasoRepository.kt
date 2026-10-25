@@ -1,19 +1,11 @@
 package com.duoc.securitysjapp.repository
 
 import com.duoc.securitysjapp.model.Caso
+import com.duoc.securitysjapp.model.CasoDao
 
-object CasoRepository {
-
-    private val casos = mutableListOf<Caso>()
-    private var nextId = 1L
-
-    fun insert(caso: Caso): Long {
-        val nuevoCaso = caso.copy(id = nextId++)
-        casos.add(nuevoCaso)
-        return nuevoCaso.id
-    }
-
-    fun getAll(): List<Caso> = casos.toList()
-
-    fun getById(id: Long): Caso? = casos.find { it.id == id }
+class CasoRepository(private val dao: CasoDao) {
+    suspend fun getAll(usuarioId: Int) = dao.getAll(usuarioId)
+    suspend fun getById(id: Long) = dao.getById(id)
+    suspend fun insert(caso: Caso) = dao.insert(caso)
+    suspend fun update(caso: Caso) = dao.update(caso)
 }
