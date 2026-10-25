@@ -19,10 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.duoc.securitysjapp.model.Caso
+import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulNavActivo
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
 import com.duoc.securitysjapp.ui.theme.PrioridadAltaFondo
@@ -72,6 +75,7 @@ fun ListaCasosScreen(
     onCasoClick: (Caso) -> Unit = {},
     onInicioClick: () -> Unit = {},
     onPerfilClick: () -> Unit = {},
+    onNuevoCasoClick: () -> Unit = {},
 ) {
     LaunchedEffect(Unit) {
         viewModel.cargarCasos()
@@ -109,6 +113,18 @@ fun ListaCasosScreen(
                 onCasosClick = { viewModel.cargarCasos() },
                 onPerfilClick = onPerfilClick,
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNuevoCasoClick,
+                containerColor = AzulBotonGuardar,
+                contentColor = Color.White,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Nuevo caso",
+                )
+            }
         },
         containerColor = Color.White,
     ) { innerPadding ->

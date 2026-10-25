@@ -15,13 +15,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.duoc.securitysjapp.model.AppDatabase
+import com.duoc.securitysjapp.repository.CasoRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
 import com.duoc.securitysjapp.ui.DetalleCasoScreen
+import com.duoc.securitysjapp.ui.CierreCasoScreen
 import com.duoc.securitysjapp.ui.ListaCasosScreen
 import com.duoc.securitysjapp.ui.LoginScreen
+import com.duoc.securitysjapp.ui.NuevoCasoScreen
 import com.duoc.securitysjapp.ui.ProfileScreen
 import com.duoc.securitysjapp.ui.RegistroScreen
 import com.duoc.securitysjapp.ui.theme.SecuritySJAppTheme
+import com.duoc.securitysjapp.viewModel.CasoViewModel
+import com.duoc.securitysjapp.viewModel.DetalleCasoViewModel
 import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
 import com.duoc.securitysjapp.viewModel.ProfileViewModel
 import com.duoc.securitysjapp.viewModel.ProfileViewModelFactory
@@ -37,6 +42,7 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(applicationContext)
         // Crear el Repository pasando el DAO
         val usuarioRepository = UsuarioRepository(database.usuarioDao())
+        val casoRepository = CasoRepository(database.casoDao())
         // Factories para inyectar el repositorio en los ViewModels
         val usuarioViewModelFactory = UsuarioFormViewModelFactory(usuarioRepository)
         val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository)
@@ -85,7 +91,9 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
-                            val listaCasosViewModel: ListaCasosViewModel = viewModel()
+                            val listaCasosViewModel: ListaCasosViewModel = viewModel(
+                                factory = ListaCasosViewModel.provideFactory(casoRepository, usuarioId)
+                            )
                             ListaCasosScreen(
                                 viewModel = listaCasosViewModel,
                                 onNavigateBack = { finish() },
@@ -95,6 +103,26 @@ class MainActivity : ComponentActivity() {
                                 // El botón "Perfil" de la barra inferior llama a onPerfilClick
                                 onPerfilClick = {
                                     navController.navigate("perfil/$usuarioId")
+                                },
+                                onNuevoCasoClick = {
+                                    navController.navigate("nuevo_caso/$usuarioId")
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = "nuevo_caso/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
+                            val casoViewModel: CasoViewModel = viewModel(
+                                factory = CasoViewModel.provideFactory(casoRepository)
+                            )
+                            NuevoCasoScreen(
+                                viewModel = casoViewModel,
+                                usuarioId = usuarioId,
+                                onNavigateBack = {
+                                    navController.popBackStack()
                                 }
                             )
                         }
@@ -128,10 +156,36 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val casoId = backStackEntry.arguments?.getLong("casoId") ?: 0L
 
+                            val detalleViewModel: DetalleCasoViewModel = viewModel(
+                                key = "detalleCaso_$casoId",
+                                factory = DetalleCasoViewModel.provideFactory(casoRepository, casoId)
+                            )
+
                             DetalleCasoScreen(
-                                casoId = casoId,
+                                viewModel = detalleViewModel,
                                 onNavigateBack = {
                                     navController.popBackStack()
+                                },
+                                onCasoCerrado = { id ->
+                                    // Pasa a la pantalla de cierre y saca el detalle del historial
+                                    navController.navigate("cierre_caso/$id") {
+                                        popUpTo("detalle_caso/{casoId}") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = "cierre_caso/{casoId}",
+                            arguments = listOf(navArgument("casoId") { type = NavType.LongType })
+                        ) { backStackEntry ->
+                            val casoId = backStackEntry.arguments?.getLong("casoId") ?: 0L
+
+                            CierreCasoScreen(
+                                casoId = casoId,
+                                onVolverAlInicio = {
+                                    // Vuelve a la lista de casos (se recarga sola al aparecer)
+                                    navController.popBackStack("lista_casos/{usuarioId}", false)
                                 }
                             )
                         }
