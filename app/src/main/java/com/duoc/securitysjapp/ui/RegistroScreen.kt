@@ -9,11 +9,12 @@ import com.duoc.securitysjapp.viewModel.UsuarioFormViewModel
 
 @Composable
 fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Unit) {
+
+    var nombreCompleto by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     val registroEstado by viewModel.registroExitoso.collectAsState()
 
-    // Observar si el registro fue exitoso
     LaunchedEffect(registroEstado) {
         if (registroEstado == true) {
             viewModel.resetEstados()
@@ -24,6 +25,14 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "Registro", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = nombreCompleto,
+            onValueChange = { nombreCompleto = it },
+            label = { Text("Nombre completo") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = correo,
@@ -42,7 +51,7 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { viewModel.registrarUsuario(correo, contrasena) },
+            onClick = { viewModel.registrarUsuario(nombreCompleto, correo, contrasena) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Registrarse")

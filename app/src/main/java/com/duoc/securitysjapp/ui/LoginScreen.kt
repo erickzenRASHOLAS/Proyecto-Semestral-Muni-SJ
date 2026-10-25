@@ -10,7 +10,7 @@ import com.duoc.securitysjapp.viewModel.UsuarioFormViewModel
 @Composable
 fun LoginScreen(
     viewModel: UsuarioFormViewModel,
-    onLoginExitoso: () -> Unit,
+    onLoginExitoso: (usuarioId: Int) -> Unit,
     onIrARegistro: () -> Unit
 ) {
     var correo by remember { mutableStateOf("") }
@@ -21,8 +21,9 @@ fun LoginScreen(
     LaunchedEffect(loginEstado) {
         when (loginEstado) {
             true -> {
+                val id = viewModel.usuarioId.value
                 viewModel.resetEstados()
-                onLoginExitoso()
+                onLoginExitoso(id)
             }
             false -> {
                 mensajeError = "Credenciales incorrectas"
@@ -68,4 +69,4 @@ fun LoginScreen(
             Text("¿No tienes cuenta? Regístrate aquí")
         }
     }
-}
+}

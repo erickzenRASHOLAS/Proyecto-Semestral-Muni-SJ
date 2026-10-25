@@ -15,13 +15,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.duoc.securitysjapp.model.AppDatabase
-import com.duoc.securitysjapp.respository.UsuarioRepository
+import com.duoc.securitysjapp.repository.UsuarioRepository
 import com.duoc.securitysjapp.ui.DetalleCasoScreen
 import com.duoc.securitysjapp.ui.ListaCasosScreen
 import com.duoc.securitysjapp.ui.LoginScreen
+import com.duoc.securitysjapp.ui.ProfileScreen
 import com.duoc.securitysjapp.ui.RegistroScreen
 import com.duoc.securitysjapp.ui.theme.SecuritySJAppTheme
 import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
+import com.duoc.securitysjapp.viewModel.ProfileViewModel
+import com.duoc.securitysjapp.viewModel.ProfileViewModelFactory
 import com.duoc.securitysjapp.viewModel.UsuarioFormViewModel
 import com.duoc.securitysjapp.viewModel.UsuarioFormViewModelFactory
 
@@ -34,9 +37,9 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(applicationContext)
         // Crear el Repository pasando el DAO
         val usuarioRepository = UsuarioRepository(database.usuarioDao())
-        // Crear el Factory para inyectar el repositorio en el ViewModel
-        //
+        // Factories para inyectar el repositorio en los ViewModels
         val usuarioViewModelFactory = UsuarioFormViewModelFactory(usuarioRepository)
+        val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository)
 
         setContent {
             SecuritySJAppTheme {
@@ -53,12 +56,13 @@ class MainActivity : ComponentActivity() {
                                 viewModel(factory = usuarioViewModelFactory)
                             LoginScreen(
                                 viewModel = authViewModel,
-                                onLoginExitoso = {
-                                    navController.navigate("lista_casos") {
+                                onLoginExitoso = { usuarioId ->
+                                    // Se pasa el id del usuario para poder cargar su perfil después
+                                    navController.navigate("lista_casos/$usuarioId") {
                                         popUpTo("login") { inclusive = true }
                                     }
                                 },
-                                // Redirige a al pantalla de registro
+                                // Redirige a la pantalla de registro
                                 onIrARegistro = {
                                     navController.navigate("registro")
                                 }
@@ -76,13 +80,44 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("lista_casos") {
+                        composable(
+                            route = "lista_casos/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
                             val listaCasosViewModel: ListaCasosViewModel = viewModel()
                             ListaCasosScreen(
                                 viewModel = listaCasosViewModel,
                                 onNavigateBack = { finish() },
                                 onCasoClick = { caso ->
                                     navController.navigate("detalle_caso/${caso.id}")
+                                },
+                                // El botón "Perfil" de la barra inferior llama a onPerfilClick
+                                onPerfilClick = {
+                                    navController.navigate("perfil/$usuarioId")
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = "perfil/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
+                            val profileViewModel: ProfileViewModel =
+                                viewModel(factory = profileViewModelFactory)
+
+                            ProfileScreen(
+                                viewModel = profileViewModel,
+                                usuarioId = usuarioId,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                },
+                                onLogoutClick = {
+                                    // Vuelve al login y limpia to|do el historial de navegación
+                                    navController.navigate("login") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
                             )
                         }

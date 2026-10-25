@@ -1,11 +1,21 @@
+package com.duoc.securitysjapp.ui
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -14,14 +24,44 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoc.securitysjapp.viewModel.ProfileViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Pantalla con estado: lee los datos desde el ViewModel
 @Composable
 fun ProfileScreen(
-    // Estos parámetros deberán venir de tu base de datos (Room) tras el login
+    viewModel: ProfileViewModel,
+    usuarioId: Int,
+    onNavigateBack: () -> Unit = {},
+    onChangePasswordClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
+) {
+    LaunchedEffect(usuarioId) {
+        viewModel.cargarPerfil(usuarioId)
+    }
+
+    val nombre by viewModel.nombreUsuario.collectAsState()
+    val correo by viewModel.correoUsuario.collectAsState()
+    val rol by viewModel.rolUsuario.collectAsState()
+
+    ProfileContent(
+        nombreUsuario = nombre,
+        correoUsuario = correo,
+        rolUsuario = rol,
+        onNavigateBack = onNavigateBack,
+        onChangePasswordClick = onChangePasswordClick,
+        onSettingsClick = onSettingsClick,
+        onLogoutClick = onLogoutClick
+    )
+}
+
+// Contenido sin estado (fácil de usar en @Preview)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileContent(
     nombreUsuario: String = "Nombre de Usuario",
     correoUsuario: String = "usuario@correo.com",
-    rolUsuario: String = "Vecino", // Valor por defecto
+    rolUsuario: String = "Vecino",
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
@@ -33,7 +73,7 @@ fun ProfileScreen(
                 title = { Text("Mi perfil", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,10 +142,10 @@ fun ProfileScreen(
                 onClick = onSettingsClick
             )
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             ProfileMenuItem(
-                icon = Icons.Default.ExitToApp,
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
                 text = "Cerrar sesión",
                 textColor = Color(0xFFD32F2F), // Rojo para destacar la salida
                 iconColor = Color(0xFFD32F2F),
@@ -145,9 +185,9 @@ fun ProfileMenuItem(
             modifier = Modifier.weight(1f)
         )
         Icon(
-            imageVector = Icons.Default.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Ir",
             tint = Color.Gray
         )
     }
-}
+}

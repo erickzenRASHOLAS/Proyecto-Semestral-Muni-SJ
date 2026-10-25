@@ -1,4 +1,4 @@
-package com.duoc.securitysjapp.respository
+package com.duoc.securitysjapp.repository
 
 import com.duoc.securitysjapp.model.Usuario
 import com.duoc.securitysjapp.model.UsuarioDao
@@ -17,4 +17,4 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         return usuarioDao.obtenerUsuarioPorId(id)
     }
 
-}
+}
