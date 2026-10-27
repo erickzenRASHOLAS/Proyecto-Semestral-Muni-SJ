@@ -1,12 +1,19 @@
 package com.duoc.securitysjapp.viewModel
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.repository.UsuarioRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() {
 
@@ -19,6 +26,9 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _rolUsuario = MutableStateFlow("Vecino")
     val rolUsuario: StateFlow<String> = _rolUsuario
 
+    private val _fotoBitmap = MutableStateFlow<Bitmap?>(null)
+    val fotoBitmap: StateFlow<Bitmap?> = _fotoBitmap
+
     // Se llama cuando se abre la pantalla de perfil
     fun cargarPerfil(usuarioId: Int) {
         viewModelScope.launch {
@@ -27,6 +37,30 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
                 _nombreUsuario.value = usuario.nombreCompleto
                 _correoUsuario.value = usuario.correo
                 _rolUsuario.value = usuario.rol
+
+                if (!usuario.fotoRuta.isNullOrEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        val file = File(usuario.fotoRuta)
+                        if (file.exists()) {
+                            _fotoBitmap.value = BitmapFactory.decodeFile(file.absolutePath)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun guardarFotoPerfil(context: Context, usuarioId: Int, bitmap: Bitmap) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val file = File(context.filesDir, "perfil_$usuarioId.jpg")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+                repository.actualizarFotoRuta(usuarioId, file.absolutePath)
+                _fotoBitmap.value = bitmap
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

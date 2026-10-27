@@ -17,4 +17,8 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         return usuarioDao.obtenerUsuarioPorId(id)
     }
 
-}
+    suspend fun actualizarFotoRuta(id: Int, fotoRuta: String?) {
+        usuarioDao.actualizarFotoRuta(id, fotoRuta)
+    }
+
+}

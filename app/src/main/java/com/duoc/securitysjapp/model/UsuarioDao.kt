@@ -15,4 +15,7 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios WHERE id = :id")
     suspend fun obtenerUsuarioPorId(id: Int): Usuario?
+
+    @Query("UPDATE usuarios SET fotoRuta = :fotoRuta WHERE id = :id")
+    suspend fun actualizarFotoRuta(id: Int, fotoRuta: String?)
 }

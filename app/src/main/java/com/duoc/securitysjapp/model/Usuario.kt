@@ -10,7 +10,8 @@ data class Usuario(
     val nombreCompleto: String,
     val correo: String,
     val contrasena: String,
-    val rol:String
+    val rol:String,
+    val fotoRuta: String? = null
 )
 
 // Roles de usuario
