@@ -17,8 +17,9 @@ import androidx.navigation.navArgument
 import com.duoc.securitysjapp.model.AppDatabase
 import com.duoc.securitysjapp.repository.CasoRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
-import com.duoc.securitysjapp.ui.DetalleCasoScreen
 import com.duoc.securitysjapp.ui.CierreCasoScreen
+import com.duoc.securitysjapp.ui.DetalleCasoScreen
+import com.duoc.securitysjapp.ui.InicioScreen
 import com.duoc.securitysjapp.ui.ListaCasosScreen
 import com.duoc.securitysjapp.ui.LoginScreen
 import com.duoc.securitysjapp.ui.NuevoCasoScreen
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
         // Inicializa la Base de Datos Room
         val database = AppDatabase.getDatabase(applicationContext)
-        // Crear el Repository pasando el DAO
+        // Repositorios: reciben el DAO correspondiente
         val usuarioRepository = UsuarioRepository(database.usuarioDao())
         val casoRepository = CasoRepository(database.casoDao())
         // Factories para inyectar el repositorio en los ViewModels
@@ -55,6 +56,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
+                    // Pestañas de la barra inferior: cambia de pantalla sin apilar historial
+                    fun irAPestana(ruta: String) {
+                        navController.navigate(ruta) {
+                            popUpTo("inicio/{usuarioId}")
+                            launchSingleTop = true
+                        }
+                    }
+
                     NavHost(navController = navController, startDestination = "login") {
 
                         composable("login") {
@@ -63,12 +72,11 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onLoginExitoso = { usuarioId ->
-                                    // Se pasa el id del usuario para poder cargar su perfil después
-                                    navController.navigate("lista_casos/$usuarioId") {
+                                    // Entra al menú de inicio con el id del usuario logueado
+                                    navController.navigate("inicio/$usuarioId") {
                                         popUpTo("login") { inclusive = true }
                                     }
                                 },
-                                // Redirige a la pantalla de registro
                                 onIrARegistro = {
                                     navController.navigate("registro")
                                 }
@@ -86,26 +94,63 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Menú principal
                         composable(
-                            route = "lista_casos/{usuarioId}",
+                            route = "inicio/{usuarioId}",
                             arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
-                            val listaCasosViewModel: ListaCasosViewModel = viewModel(
-                                factory = ListaCasosViewModel.provideFactory(casoRepository, usuarioId)
+                            val profileViewModel: ProfileViewModel =
+                                viewModel(factory = profileViewModelFactory)
+                            InicioScreen(
+                                viewModel = profileViewModel,
+                                usuarioId = usuarioId,
+                                onNuevoCasoClick = { navController.navigate("nuevo_caso/$usuarioId") },
+                                onMisCasosClick = { irAPestana("mis_casos/$usuarioId") },
+                                onTodosCasosClick = { navController.navigate("todos_casos/$usuarioId") },
+                                onPerfilClick = { irAPestana("perfil/$usuarioId") }
+                            )
+                        }
+
+                        // Solo los casos del usuario logueado
+                        composable(
+                            route = "mis_casos/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
+                            val listaViewModel: ListaCasosViewModel = viewModel(
+                                factory = ListaCasosViewModel.provideFactory(casoRepository, usuarioId, true)
                             )
                             ListaCasosScreen(
-                                viewModel = listaCasosViewModel,
-                                onNavigateBack = { finish() },
+                                viewModel = listaViewModel,
+                                titulo = "Mis casos",
+                                onNavigateBack = { navController.popBackStack() },
                                 onCasoClick = { caso ->
-                                    navController.navigate("detalle_caso/${caso.id}")
+                                    navController.navigate("detalle_caso/${caso.id}/$usuarioId")
                                 },
-                                // El botón "Perfil" de la barra inferior llama a onPerfilClick
-                                onPerfilClick = {
-                                    navController.navigate("perfil/$usuarioId")
+                                onInicioClick = {
+                                    navController.popBackStack("inicio/{usuarioId}", false)
                                 },
-                                onNuevoCasoClick = {
-                                    navController.navigate("nuevo_caso/$usuarioId")
+                                onPerfilClick = { irAPestana("perfil/$usuarioId") }
+                            )
+                        }
+
+                        // Casos de todos los usuarios
+                        composable(
+                            route = "todos_casos/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
+                            val listaViewModel: ListaCasosViewModel = viewModel(
+                                factory = ListaCasosViewModel.provideFactory(casoRepository, usuarioId, false)
+                            )
+                            ListaCasosScreen(
+                                viewModel = listaViewModel,
+                                titulo = "Todos los casos",
+                                mostrarBarraInferior = false,
+                                onNavigateBack = { navController.popBackStack() },
+                                onCasoClick = { caso ->
+                                    navController.navigate("detalle_caso/${caso.id}/$usuarioId")
                                 }
                             )
                         }
@@ -121,9 +166,7 @@ class MainActivity : ComponentActivity() {
                             NuevoCasoScreen(
                                 viewModel = casoViewModel,
                                 usuarioId = usuarioId,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 
@@ -138,11 +181,13 @@ class MainActivity : ComponentActivity() {
                             ProfileScreen(
                                 viewModel = profileViewModel,
                                 usuarioId = usuarioId,
-                                onNavigateBack = {
-                                    navController.popBackStack()
+                                onNavigateBack = { navController.popBackStack() },
+                                onInicioClick = {
+                                    navController.popBackStack("inicio/{usuarioId}", false)
                                 },
+                                onCasosClick = { irAPestana("mis_casos/$usuarioId") },
                                 onLogoutClick = {
-                                    // Vuelve al login y limpia to|do el historial de navegación
+                                    // Vuelve al login y limpia compléto el historial de navegación
                                     navController.navigate("login") {
                                         popUpTo(0) { inclusive = true }
                                     }
@@ -151,25 +196,29 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(
-                            route = "detalle_caso/{casoId}",
-                            arguments = listOf(navArgument("casoId") { type = NavType.LongType })
+                            route = "detalle_caso/{casoId}/{usuarioId}",
+                            arguments = listOf(
+                                navArgument("casoId") { type = NavType.LongType },
+                                navArgument("usuarioId") { type = NavType.IntType }
+                            )
                         ) { backStackEntry ->
                             val casoId = backStackEntry.arguments?.getLong("casoId") ?: 0L
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
 
                             val detalleViewModel: DetalleCasoViewModel = viewModel(
                                 key = "detalleCaso_$casoId",
-                                factory = DetalleCasoViewModel.provideFactory(casoRepository, casoId)
+                                factory = DetalleCasoViewModel.provideFactory(
+                                    casoRepository, usuarioRepository, casoId, usuarioId
+                                )
                             )
 
                             DetalleCasoScreen(
                                 viewModel = detalleViewModel,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                },
+                                onNavigateBack = { navController.popBackStack() },
                                 onCasoCerrado = { id ->
                                     // Pasa a la pantalla de cierre y saca el detalle del historial
                                     navController.navigate("cierre_caso/$id") {
-                                        popUpTo("detalle_caso/{casoId}") { inclusive = true }
+                                        popUpTo("detalle_caso/{casoId}/{usuarioId}") { inclusive = true }
                                     }
                                 }
                             )
@@ -184,8 +233,8 @@ class MainActivity : ComponentActivity() {
                             CierreCasoScreen(
                                 casoId = casoId,
                                 onVolverAlInicio = {
-                                    // Vuelve a la lista de casos (se recarga sola al aparecer)
-                                    navController.popBackStack("lista_casos/{usuarioId}", false)
+                                    // Vuelve al menú de inicio
+                                    navController.popBackStack("inicio/{usuarioId}", false)
                                 }
                             )
                         }

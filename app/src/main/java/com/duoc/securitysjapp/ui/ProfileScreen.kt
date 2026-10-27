@@ -34,7 +34,9 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onInicioClick: () -> Unit = {},
+    onCasosClick: () -> Unit = {}
 ) {
     LaunchedEffect(usuarioId) {
         viewModel.cargarPerfil(usuarioId)
@@ -51,7 +53,9 @@ fun ProfileScreen(
         onNavigateBack = onNavigateBack,
         onChangePasswordClick = onChangePasswordClick,
         onSettingsClick = onSettingsClick,
-        onLogoutClick = onLogoutClick
+        onLogoutClick = onLogoutClick,
+        onInicioClick = onInicioClick,
+        onCasosClick = onCasosClick
     )
 }
 
@@ -65,7 +69,9 @@ fun ProfileContent(
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onInicioClick: () -> Unit = {},
+    onCasosClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -79,6 +85,14 @@ fun ProfileContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF0D47A1) // Azul institucional
                 )
+            )
+        },
+        bottomBar = {
+            BarraNavegacionInferior(
+                destinoSeleccionado = DestinoNavInferior.Perfil,
+                onInicioClick = onInicioClick,
+                onCasosClick = onCasosClick,
+                onPerfilClick = {}
             )
         }
     ) { paddingValues ->

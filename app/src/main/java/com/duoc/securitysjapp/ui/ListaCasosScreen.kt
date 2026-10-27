@@ -2,7 +2,6 @@ package com.duoc.securitysjapp.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,17 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,13 +31,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.duoc.securitysjapp.model.Caso
-import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
-import com.duoc.securitysjapp.ui.theme.AzulNavActivo
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
 import com.duoc.securitysjapp.ui.theme.PrioridadAltaFondo
 import com.duoc.securitysjapp.ui.theme.PrioridadBajaFondo
@@ -54,28 +44,23 @@ import com.duoc.securitysjapp.ui.theme.PrioridadUrgenteFondo
 import com.duoc.securitysjapp.ui.theme.SeparadorListaCaso
 import com.duoc.securitysjapp.ui.theme.TextoEtiquetaFormulario
 import com.duoc.securitysjapp.ui.theme.TextoFechaCaso
-import com.duoc.securitysjapp.ui.theme.TextoNavInactivo
 import com.duoc.securitysjapp.ui.theme.TextoUbicacionCaso
 import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private enum class DestinoNavInferior {
-    Inicio,
-    Casos,
-    Perfil,
-}
-
+// Se usa tanto para "Mis casos" como para "Todos los casos"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListaCasosScreen(
     viewModel: ListaCasosViewModel,
+    titulo: String,
+    mostrarBarraInferior: Boolean = true, // solo "Mis casos" la muestra
     onNavigateBack: () -> Unit = {},
     onCasoClick: (Caso) -> Unit = {},
     onInicioClick: () -> Unit = {},
     onPerfilClick: () -> Unit = {},
-    onNuevoCasoClick: () -> Unit = {},
 ) {
     LaunchedEffect(Unit) {
         viewModel.cargarCasos()
@@ -86,7 +71,7 @@ fun ListaCasosScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mis casos",
+                        text = titulo,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                     )
@@ -107,22 +92,12 @@ fun ListaCasosScreen(
             )
         },
         bottomBar = {
-            BarraNavegacionInferior(
-                destinoSeleccionado = DestinoNavInferior.Casos,
-                onInicioClick = onInicioClick,
-                onCasosClick = { viewModel.cargarCasos() },
-                onPerfilClick = onPerfilClick,
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNuevoCasoClick,
-                containerColor = AzulBotonGuardar,
-                contentColor = Color.White,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Nuevo caso",
+            if (mostrarBarraInferior) {
+                BarraNavegacionInferior(
+                    destinoSeleccionado = DestinoNavInferior.Casos,
+                    onInicioClick = onInicioClick,
+                    onCasosClick = { viewModel.cargarCasos() },
+                    onPerfilClick = onPerfilClick,
                 )
             }
         },
@@ -162,75 +137,6 @@ fun ListaCasosScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BarraNavegacionInferior(
-    destinoSeleccionado: DestinoNavInferior,
-    onInicioClick: () -> Unit,
-    onCasosClick: () -> Unit,
-    onPerfilClick: () -> Unit,
-) {
-    Surface(
-        color = Color.White,
-        shadowElevation = 4.dp,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            ItemBarraInferior(
-                etiqueta = "Inicio",
-                icono = Icons.Default.Home,
-                seleccionado = destinoSeleccionado == DestinoNavInferior.Inicio,
-                onClick = onInicioClick,
-            )
-            ItemBarraInferior(
-                etiqueta = "Casos",
-                icono = Icons.AutoMirrored.Filled.List,
-                seleccionado = destinoSeleccionado == DestinoNavInferior.Casos,
-                onClick = onCasosClick,
-            )
-            ItemBarraInferior(
-                etiqueta = "Perfil",
-                icono = Icons.Default.Person,
-                seleccionado = destinoSeleccionado == DestinoNavInferior.Perfil,
-                onClick = onPerfilClick,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ItemBarraInferior(
-    etiqueta: String,
-    icono: ImageVector,
-    seleccionado: Boolean,
-    onClick: () -> Unit,
-) {
-    val color = if (seleccionado) AzulNavActivo else TextoNavInactivo
-    Column(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = icono,
-            contentDescription = etiqueta,
-            tint = color,
-            modifier = Modifier.size(24.dp),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = etiqueta,
-            color = color,
-            fontSize = 12.sp,
-            fontWeight = if (seleccionado) FontWeight.SemiBold else FontWeight.Normal,
-        )
     }
 }
 

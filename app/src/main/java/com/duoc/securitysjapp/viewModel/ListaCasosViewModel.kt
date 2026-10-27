@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 class ListaCasosViewModel(
     private val repository: CasoRepository,
     private val usuarioId: Int,
+    private val soloMisCasos: Boolean, // true = "Mis casos", false = "Todos los casos"
 ) : ViewModel() {
 
     var casos by mutableStateOf<List<Caso>>(emptyList())
@@ -24,16 +25,24 @@ class ListaCasosViewModel(
 
     fun cargarCasos() {
         viewModelScope.launch {
-            casos = repository.getAll(usuarioId)
+            casos = if (soloMisCasos) {
+                repository.getByUsuario(usuarioId)
+            } else {
+                repository.getAll()
+            }
         }
     }
 
     companion object {
-        fun provideFactory(repository: CasoRepository, usuarioId: Int): ViewModelProvider.Factory =
+        fun provideFactory(
+            repository: CasoRepository,
+            usuarioId: Int,
+            soloMisCasos: Boolean,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ListaCasosViewModel(repository, usuarioId) as T
+                    return ListaCasosViewModel(repository, usuarioId, soloMisCasos) as T
                 }
             }
     }
