@@ -3,6 +3,7 @@ package com.duoc.securitysjapp.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.duoc.securitysjapp.model.ROL_VECINO
 import com.duoc.securitysjapp.model.Usuario
 import com.duoc.securitysjapp.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,7 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _usuarioId = MutableStateFlow(0)
     val usuarioId: StateFlow<Int> = _usuarioId
 
-    fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = "Usuario") {
+    fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = ROL_VECINO) {
         viewModelScope.launch {
             repository.registrarUsuario(
                 Usuario(

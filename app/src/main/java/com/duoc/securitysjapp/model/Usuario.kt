@@ -12,3 +12,7 @@ data class Usuario(
     val contrasena: String,
     val rol:String
 )
+
+// Roles de usuario
+const val ROL_VECINO = "Vecino"
+const val ROL_MUNICIPAL = "Municipal"

@@ -44,7 +44,6 @@ import com.duoc.securitysjapp.model.Caso
 import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulNavActivo
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
-import com.duoc.securitysjapp.ui.theme.FondoCampoFormulario
 import com.duoc.securitysjapp.ui.theme.PrioridadAltaFondo
 import com.duoc.securitysjapp.ui.theme.PrioridadBajaFondo
 import com.duoc.securitysjapp.ui.theme.PrioridadMediaFondo
@@ -52,7 +51,6 @@ import com.duoc.securitysjapp.ui.theme.PrioridadMediaTexto
 import com.duoc.securitysjapp.ui.theme.PrioridadUrgenteFondo
 import com.duoc.securitysjapp.ui.theme.TextoEtiquetaFormulario
 import com.duoc.securitysjapp.ui.theme.TextoFechaCaso
-import com.duoc.securitysjapp.ui.theme.TextoUbicacionCaso
 import com.duoc.securitysjapp.viewModel.DetalleCasoViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -113,6 +111,8 @@ fun DetalleCasoScreen(
         } else {
             ContenidoDetalleCaso(
                 caso = caso,
+                creadoPor = viewModel.creadoPor,
+                puedeCerrar = viewModel.puedeCambiarEstado,
                 onCerrarCaso = { viewModel.cerrarCaso { onCasoCerrado(caso.id) } },
                 modifier = Modifier.padding(innerPadding),
             )
@@ -123,6 +123,8 @@ fun DetalleCasoScreen(
 @Composable
 private fun ContenidoDetalleCaso(
     caso: Caso,
+    creadoPor: String,
+    puedeCerrar: Boolean,
     onCerrarCaso: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -184,8 +186,8 @@ private fun ContenidoDetalleCaso(
         Spacer(modifier = Modifier.height(16.dp))
         FilaDatoDetalle(
             icono = Icons.Default.Person,
-            etiqueta = "Responsable",
-            valor = caso.responsable,
+            etiqueta = "Creado por",
+            valor = creadoPor,
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -204,32 +206,8 @@ private fun ContenidoDetalleCaso(
             lineHeight = 22.sp,
         )
 
-        if (caso.observaciones.isNotBlank()) {
-            Spacer(modifier = Modifier.height(28.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(FondoCampoFormulario, RoundedCornerShape(12.dp))
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = "Observaciones",
-                    color = AzulOscuroTopBar,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = caso.observaciones,
-                    color = TextoUbicacionCaso,
-                    fontSize = 15.sp,
-                    lineHeight = 22.sp,
-                )
-            }
-        }
-
-        // Solo se puede cerrar un caso que aún no está cerrado
-        if (caso.estado != "Cerrado") {
+        // El botón solo aparece si el usuario puede cambiar el estado (lo decide el ViewModel)
+        if (puedeCerrar) {
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onCerrarCaso,

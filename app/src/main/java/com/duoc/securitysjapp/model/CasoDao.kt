@@ -13,9 +13,13 @@ interface CasoDao {
     @Update
     suspend fun update(caso: Caso)
 
-    // Casos del usuario, del más nuevo al más antiguo
+    // Todos los casos, del más nuevo al más antiguo
+    @Query("SELECT * FROM casos ORDER BY id DESC")
+    suspend fun getAll(): List<Caso>
+
+    // Solo los casos creados por un usuario
     @Query("SELECT * FROM casos WHERE usuarioId = :usuarioId ORDER BY id DESC")
-    suspend fun getAll(usuarioId: Int): List<Caso>
+    suspend fun getByUsuario(usuarioId: Int): List<Caso>
 
     @Query("SELECT * FROM casos WHERE id = :id")
     suspend fun getById(id: Long): Caso?
