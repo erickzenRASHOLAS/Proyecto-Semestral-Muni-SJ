@@ -16,6 +16,12 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)
 
+    // Errores de validación
+    var errorCategoria by mutableStateOf<String?>(null)
+    var errorDescripcion by mutableStateOf<String?>(null)
+    var errorUbicacion by mutableStateOf<String?>(null)
+    var errorPrioridad by mutableStateOf<String?>(null)
+
     val categorias = listOf(
         "Seguridad",
         "Convivencia",
@@ -31,8 +37,42 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         "Urgente",
     )
 
-    // Por ahora sin validaciones: guarda lo que haya en el formulario
     fun guardar(usuarioId: Int) {
+        var hayError = false
+
+        if (casoForm.categoria.isBlank()) {
+            errorCategoria = "Debes seleccionar una categoría"
+            hayError = true
+        } else {
+            errorCategoria = null
+        }
+
+        if (casoForm.descripcion.isBlank()) {
+            errorDescripcion = "La descripción es obligatoria"
+            hayError = true
+        } else if (casoForm.descripcion.trim().length < 10) {
+            errorDescripcion = "La descripción debe tener al menos 10 caracteres"
+            hayError = true
+        } else {
+            errorDescripcion = null
+        }
+
+        if (casoForm.ubicacion.isBlank()) {
+            errorUbicacion = "Debes indicar una ubicación"
+            hayError = true
+        } else {
+            errorUbicacion = null
+        }
+
+        if (casoForm.prioridad.isBlank()) {
+            errorPrioridad = "Debes seleccionar una prioridad"
+            hayError = true
+        } else {
+            errorPrioridad = null
+        }
+
+        if (hayError) return
+
         viewModelScope.launch {
             repository.insert(
                 Caso(
@@ -44,8 +84,21 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
                 )
             )
             guardadoExitoso = true
-            casoForm = CasoForm()
+            limpiarFormularioYErrores()
         }
+    }
+
+    fun limpiarErrorCategoria() { errorCategoria = null }
+    fun limpiarErrorDescripcion() { errorDescripcion = null }
+    fun limpiarErrorUbicacion() { errorUbicacion = null }
+    fun limpiarErrorPrioridad() { errorPrioridad = null }
+
+    fun limpiarFormularioYErrores() {
+        casoForm = CasoForm()
+        errorCategoria = null
+        errorDescripcion = null
+        errorUbicacion = null
+        errorPrioridad = null
     }
 
     fun consumirGuardadoExitoso() {

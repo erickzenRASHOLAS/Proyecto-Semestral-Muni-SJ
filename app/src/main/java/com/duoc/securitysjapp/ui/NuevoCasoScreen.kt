@@ -15,11 +15,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -123,7 +124,12 @@ fun NuevoCasoScreen(
                 valor = viewModel.casoForm.categoria,
                 placeholder = "Selecciona una categoría",
                 opciones = viewModel.categorias,
-                onSeleccion = { viewModel.casoForm.categoria = it },
+                onSeleccion = {
+                    viewModel.casoForm.categoria = it
+                    viewModel.limpiarErrorCategoria()
+                },
+                isError = viewModel.errorCategoria != null,
+                errorText = viewModel.errorCategoria,
                 colors = campoColors,
                 shape = formaCampo,
             )
@@ -133,11 +139,20 @@ fun NuevoCasoScreen(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = viewModel.casoForm.descripcion,
-                onValueChange = { viewModel.casoForm.descripcion = it },
+                onValueChange = {
+                    viewModel.casoForm.descripcion = it
+                    if (viewModel.errorDescripcion != null) viewModel.limpiarErrorDescripcion()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                placeholder = { Text("Describe la situación...") },
+                    .height(130.dp),
+                placeholder = { Text("Describe la situación (mín. 10 caracteres)...") },
+                isError = viewModel.errorDescripcion != null,
+                supportingText = {
+                    if (viewModel.errorDescripcion != null) {
+                        Text(text = viewModel.errorDescripcion!!, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 colors = campoColors,
                 shape = formaCampo,
                 singleLine = false,
@@ -148,9 +163,18 @@ fun NuevoCasoScreen(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = viewModel.casoForm.ubicacion,
-                onValueChange = { viewModel.casoForm.ubicacion = it },
+                onValueChange = {
+                    viewModel.casoForm.ubicacion = it
+                    if (viewModel.errorUbicacion != null) viewModel.limpiarErrorUbicacion()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Ej: Plaza, sector, calle...") },
+                isError = viewModel.errorUbicacion != null,
+                supportingText = {
+                    if (viewModel.errorUbicacion != null) {
+                        Text(text = viewModel.errorUbicacion!!, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 colors = campoColors,
                 shape = formaCampo,
                 singleLine = true,
@@ -163,7 +187,12 @@ fun NuevoCasoScreen(
                 valor = viewModel.casoForm.prioridad,
                 placeholder = "Selecciona prioridad",
                 opciones = viewModel.prioridades,
-                onSeleccion = { viewModel.casoForm.prioridad = it },
+                onSeleccion = {
+                    viewModel.casoForm.prioridad = it
+                    viewModel.limpiarErrorPrioridad()
+                },
+                isError = viewModel.errorPrioridad != null,
+                errorText = viewModel.errorPrioridad,
                 colors = campoColors,
                 shape = formaCampo,
             )
@@ -207,41 +236,55 @@ private fun DropdownCampo(
     placeholder: String,
     opciones: List<String>,
     onSeleccion: (String) -> Unit,
+    isError: Boolean = false,
+    errorText: String? = null,
     colors: androidx.compose.material3.TextFieldColors,
     shape: RoundedCornerShape,
 ) {
     var expandido by remember { mutableStateOf(false) }
 
-    ExposedDropdownMenuBox(
-        expanded = expandido,
-        onExpandedChange = { expandido = it },
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        OutlinedTextField(
-            value = valor,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-            placeholder = { Text(placeholder) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
-            colors = colors,
-            shape = shape,
-        )
-        ExposedDropdownMenu(
+    Column(modifier = Modifier.fillMaxWidth()) {
+        ExposedDropdownMenuBox(
             expanded = expandido,
-            onDismissRequest = { expandido = false },
+            onExpandedChange = { expandido = it },
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            opciones.forEach { opcion ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(opcion) },
-                    onClick = {
-                        onSeleccion(opcion)
-                        expandido = false
-                    },
-                )
+            OutlinedTextField(
+                value = valor,
+                onValueChange = {},
+                readOnly = true,
+                isError = isError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                placeholder = { Text(placeholder) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
+                colors = colors,
+                shape = shape,
+            )
+            ExposedDropdownMenu(
+                expanded = expandido,
+                onDismissRequest = { expandido = false },
+            ) {
+                opciones.forEach { opcion ->
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(opcion) },
+                        onClick = {
+                            onSeleccion(opcion)
+                            expandido = false
+                        },
+                    )
+                }
             }
+        }
+        if (isError && !errorText.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = errorText,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 12.dp)
+            )
         }
     }
 }
