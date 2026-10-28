@@ -64,6 +64,7 @@ fun ProfileScreen(
     val correo by viewModel.correoUsuario.collectAsState()
     val rol by viewModel.rolUsuario.collectAsState()
     val fotoBitmap by viewModel.fotoBitmap.collectAsState()
+    val procesandoFoto by viewModel.procesandoFoto.collectAsState()
 
     val errorNueva by viewModel.errorNuevaContrasena.collectAsState()
     val errorConfirmar by viewModel.errorConfirmarContrasena.collectAsState()
@@ -174,6 +175,7 @@ fun ProfileScreen(
     }
 
     fun tomarFoto() {
+        if (procesandoFoto) return
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA
@@ -191,6 +193,7 @@ fun ProfileScreen(
         correoUsuario = correo,
         rolUsuario = rol,
         fotoBitmap = fotoBitmap,
+        procesandoFoto = procesandoFoto,
         onTomarFoto = ::tomarFoto,
         onNavigateBack = onNavigateBack,
         onChangePasswordClick = {
@@ -212,6 +215,7 @@ fun ProfileContent(
     correoUsuario: String = "usuario@correo.com",
     rolUsuario: String = "Vecino",
     fotoBitmap: Bitmap? = null,
+    procesandoFoto: Boolean = false,
     onTomarFoto: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
@@ -252,7 +256,7 @@ fun ProfileContent(
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Avatar circular con botón de cámara integrado
+            // Avatar circular con botón de cámara e indicador de carga integrado
             Box(
                 modifier = Modifier.size(110.dp),
                 contentAlignment = Alignment.Center
@@ -262,10 +266,16 @@ fun ProfileContent(
                         .size(100.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFE0E0E0))
-                        .clickable { onTomarFoto() },
+                        .clickable(enabled = !procesandoFoto) { onTomarFoto() },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (fotoBitmap != null) {
+                    if (procesandoFoto) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
+                            color = Color(0xFF0D47A1),
+                            strokeWidth = 3.dp
+                        )
+                    } else if (fotoBitmap != null) {
                         Image(
                             bitmap = fotoBitmap.asImageBitmap(),
                             contentDescription = "Foto de perfil",
@@ -285,10 +295,14 @@ fun ProfileContent(
                 // Botón flotante de cámara
                 IconButton(
                     onClick = onTomarFoto,
+                    enabled = !procesandoFoto,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .size(34.dp)
-                        .background(Color(0xFF0D47A1), CircleShape)
+                        .background(
+                            if (procesandoFoto) Color.Gray else Color(0xFF0D47A1),
+                            CircleShape
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.repository.UsuarioRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -28,6 +29,9 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
 
     private val _fotoBitmap = MutableStateFlow<Bitmap?>(null)
     val fotoBitmap: StateFlow<Bitmap?> = _fotoBitmap
+
+    private val _procesandoFoto = MutableStateFlow(false)
+    val procesandoFoto: StateFlow<Boolean> = _procesandoFoto
 
     // Estados para cambio de contraseña
     private val _errorNuevaContrasena = MutableStateFlow<String?>(null)
@@ -63,6 +67,8 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     fun guardarFotoPerfil(context: Context, usuarioId: Int, bitmap: Bitmap) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                _procesandoFoto.value = true
+                delay(1200) // Simula el procesamiento y guardado de la selfie
                 val file = File(context.filesDir, "perfil_$usuarioId.jpg")
                 FileOutputStream(file).use { out ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -71,6 +77,8 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
                 _fotoBitmap.value = bitmap
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                _procesandoFoto.value = false
             }
         }
     }
