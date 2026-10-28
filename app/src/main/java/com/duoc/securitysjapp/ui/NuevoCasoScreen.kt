@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -95,7 +97,10 @@ fun NuevoCasoScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        enabled = !viewModel.guardando
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -124,6 +129,7 @@ fun NuevoCasoScreen(
                 valor = viewModel.casoForm.categoria,
                 placeholder = "Selecciona una categoría",
                 opciones = viewModel.categorias,
+                enabled = !viewModel.guardando,
                 onSeleccion = {
                     viewModel.casoForm.categoria = it
                     viewModel.limpiarErrorCategoria()
@@ -143,6 +149,7 @@ fun NuevoCasoScreen(
                     viewModel.casoForm.descripcion = it
                     if (viewModel.errorDescripcion != null) viewModel.limpiarErrorDescripcion()
                 },
+                enabled = !viewModel.guardando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(130.dp),
@@ -167,6 +174,7 @@ fun NuevoCasoScreen(
                     viewModel.casoForm.ubicacion = it
                     if (viewModel.errorUbicacion != null) viewModel.limpiarErrorUbicacion()
                 },
+                enabled = !viewModel.guardando,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Ej: Plaza, sector, calle...") },
                 isError = viewModel.errorUbicacion != null,
@@ -187,6 +195,7 @@ fun NuevoCasoScreen(
                 valor = viewModel.casoForm.prioridad,
                 placeholder = "Selecciona prioridad",
                 opciones = viewModel.prioridades,
+                enabled = !viewModel.guardando,
                 onSeleccion = {
                     viewModel.casoForm.prioridad = it
                     viewModel.limpiarErrorPrioridad()
@@ -200,6 +209,7 @@ fun NuevoCasoScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = { viewModel.guardar(usuarioId) },
+                enabled = !viewModel.guardando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -209,11 +219,19 @@ fun NuevoCasoScreen(
                     contentColor = Color.White,
                 ),
             ) {
-                Text(
-                    text = "Guardar",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                )
+                if (viewModel.guardando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Text(
+                        text = "Guardar",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                    )
+                }
             }
         }
     }
@@ -235,6 +253,7 @@ private fun DropdownCampo(
     valor: String,
     placeholder: String,
     opciones: List<String>,
+    enabled: Boolean = true,
     onSeleccion: (String) -> Unit,
     isError: Boolean = false,
     errorText: String? = null,
@@ -245,14 +264,15 @@ private fun DropdownCampo(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         ExposedDropdownMenuBox(
-            expanded = expandido,
-            onExpandedChange = { expandido = it },
+            expanded = expandido && enabled,
+            onExpandedChange = { if (enabled) expandido = it },
             modifier = Modifier.fillMaxWidth(),
         ) {
             OutlinedTextField(
                 value = valor,
                 onValueChange = {},
                 readOnly = true,
+                enabled = enabled,
                 isError = isError,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -263,7 +283,7 @@ private fun DropdownCampo(
                 shape = shape,
             )
             ExposedDropdownMenu(
-                expanded = expandido,
+                expanded = expandido && enabled,
                 onDismissRequest = { expandido = false },
             ) {
                 opciones.forEach { opcion ->

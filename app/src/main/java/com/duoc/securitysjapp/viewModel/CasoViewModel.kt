@@ -9,12 +9,14 @@ import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.Caso
 import com.duoc.securitysjapp.model.CasoForm
 import com.duoc.securitysjapp.repository.CasoRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
 
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)
+    var guardando by mutableStateOf(false)
 
     // Errores de validación
     var errorCategoria by mutableStateOf<String?>(null)
@@ -74,6 +76,8 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         if (hayError) return
 
         viewModelScope.launch {
+            guardando = true
+            delay(1200) // Simula la respuesta al guardar el caso
             repository.insert(
                 Caso(
                     usuarioId = usuarioId,
@@ -83,6 +87,7 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
                     prioridad = casoForm.prioridad,
                 )
             )
+            guardando = false
             guardadoExitoso = true
             limpiarFormularioYErrores()
         }
