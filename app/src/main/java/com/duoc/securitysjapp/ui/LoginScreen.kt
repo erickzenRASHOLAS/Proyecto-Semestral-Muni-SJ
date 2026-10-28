@@ -19,6 +19,7 @@ fun LoginScreen(
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
 
+    val cargando by viewModel.cargando.collectAsState()
     val loginEstado by viewModel.loginExitoso.collectAsState()
     val errorCorreo by viewModel.errorCorreoLogin.collectAsState()
     val errorContrasena by viewModel.errorContrasenaLogin.collectAsState()
@@ -43,6 +44,7 @@ fun LoginScreen(
                 if (errorCorreo != null || errorGeneral != null) viewModel.limpiarErrorCorreoLogin()
             },
             label = { Text("Correo electrónico") },
+            enabled = !cargando,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             isError = errorCorreo != null || errorGeneral != null,
             supportingText = {
@@ -62,6 +64,7 @@ fun LoginScreen(
                 if (errorContrasena != null || errorGeneral != null) viewModel.limpiarErrorContrasenaLogin()
             },
             label = { Text("Contraseña") },
+            enabled = !cargando,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             isError = errorContrasena != null || errorGeneral != null,
@@ -86,12 +89,28 @@ fun LoginScreen(
 
         Button(
             onClick = { viewModel.iniciarSesion(correo, contrasena) },
-            modifier = Modifier.fillMaxWidth()
+            enabled = !cargando,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
         ) {
-            Text("Entrar")
+            if (cargando) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.5.dp
+                )
+            } else {
+                Text("Entrar")
+            }
         }
 
-        TextButton(onClick = onIrARegistro) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = onIrARegistro,
+            enabled = !cargando
+        ) {
             Text("¿No tienes cuenta? Regístrate aquí")
         }
     }

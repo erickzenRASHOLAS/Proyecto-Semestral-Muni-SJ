@@ -7,11 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.ROL_VECINO
 import com.duoc.securitysjapp.model.Usuario
 import com.duoc.securitysjapp.repository.UsuarioRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewModel() {
+
+    private val _cargando = MutableStateFlow(false)
+    val cargando: StateFlow<Boolean> = _cargando
 
     private val _loginExitoso = MutableStateFlow<Boolean?>(null)
     val loginExitoso: StateFlow<Boolean?> = _loginExitoso
@@ -79,6 +83,8 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         if (hayError) return
 
         viewModelScope.launch {
+            _cargando.value = true
+            delay(1200) // Simula comunicación con servidor
             repository.registrarUsuario(
                 Usuario(
                     nombreCompleto = nombreCompleto.trim(),
@@ -87,6 +93,7 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
                     rol = rol
                 )
             )
+            _cargando.value = false
             _registroExitoso.value = true
         }
     }
@@ -128,7 +135,10 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         _errorGeneralLogin.value = null
 
         viewModelScope.launch {
+            _cargando.value = true
+            delay(1200) // Simula comunicación con servidor
             val usuario = repository.iniciarSesion(correo.trim(), contrasena)
+            _cargando.value = false
             if (usuario != null) {
                 _usuarioId.value = usuario.id
                 _loginExitoso.value = true
@@ -151,6 +161,7 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     }
 
     fun resetEstados() {
+        _cargando.value = false
         _loginExitoso.value = null
         _registroExitoso.value = null
         _errorNombre.value = null
