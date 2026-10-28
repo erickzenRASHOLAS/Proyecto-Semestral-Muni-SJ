@@ -13,15 +13,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -35,7 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.duoc.securitysjapp.model.Caso
+import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
+import com.duoc.securitysjapp.ui.theme.BordeCampoFormulario
+import com.duoc.securitysjapp.ui.theme.FondoCampoFormulario
 import com.duoc.securitysjapp.ui.theme.PrioridadAltaFondo
 import com.duoc.securitysjapp.ui.theme.PrioridadBajaFondo
 import com.duoc.securitysjapp.ui.theme.PrioridadMediaFondo
@@ -44,6 +54,7 @@ import com.duoc.securitysjapp.ui.theme.PrioridadUrgenteFondo
 import com.duoc.securitysjapp.ui.theme.SeparadorListaCaso
 import com.duoc.securitysjapp.ui.theme.TextoEtiquetaFormulario
 import com.duoc.securitysjapp.ui.theme.TextoFechaCaso
+import com.duoc.securitysjapp.ui.theme.TextoPlaceholder
 import com.duoc.securitysjapp.ui.theme.TextoUbicacionCaso
 import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
 import java.text.SimpleDateFormat
@@ -103,37 +114,106 @@ fun ListaCasosScreen(
         },
         containerColor = Color.White,
     ) { innerPadding ->
-        if (viewModel.casos.isEmpty()) {
-            Box(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Sección de Búsqueda
+            OutlinedTextField(
+                value = viewModel.busquedaQuery,
+                onValueChange = { viewModel.onBusquedaQueryChange(it) },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "No hay casos registrados",
-                    color = TextoFechaCaso,
-                    fontSize = 16.sp,
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Buscar por descripción, ubicación...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = TextoPlaceholder
+                    )
+                },
+                trailingIcon = {
+                    if (viewModel.busquedaQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onBusquedaQueryChange("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Limpiar búsqueda",
+                                tint = TextoPlaceholder
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = FondoCampoFormulario,
+                    focusedContainerColor = FondoCampoFormulario,
+                    unfocusedBorderColor = BordeCampoFormulario,
+                    focusedBorderColor = AzulBotonGuardar,
+                    unfocusedTextColor = TextoEtiquetaFormulario,
+                    focusedTextColor = TextoEtiquetaFormulario,
+                    unfocusedPlaceholderColor = TextoPlaceholder,
+                    focusedPlaceholderColor = TextoPlaceholder,
                 )
-            }
-        } else {
-            LazyColumn(
+            )
+
+            // Chips de Filtro por Categoría
+            LazyRow(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
             ) {
-                items(
-                    items = viewModel.casos,
-                    key = { it.id },
-                ) { caso ->
-                    ItemCaso(
-                        caso = caso,
-                        onClick = { onCasoClick(caso) },
+                items(viewModel.categoriasFiltro) { cat ->
+                    val seleccionada = cat == viewModel.categoriaFiltro
+                    FilterChip(
+                        selected = seleccionada,
+                        onClick = { viewModel.onCategoriaFiltroChange(cat) },
+                        label = { Text(cat) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AzulOscuroTopBar,
+                            selectedLabelColor = Color.White,
+                            containerColor = FondoCampoFormulario,
+                            labelColor = TextoEtiquetaFormulario
+                        ),
+                        modifier = Modifier.padding(end = 8.dp)
                     )
-                    HorizontalDivider(
-                        color = SeparadorListaCaso,
-                        thickness = 1.dp,
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Lista o mensaje de sin resultados
+            if (viewModel.casosFiltrados.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (viewModel.busquedaQuery.isNotEmpty() || viewModel.categoriaFiltro != "Todas")
+                            "No se encontraron casos con los filtros aplicados"
+                        else
+                            "No hay casos registrados",
+                        color = TextoFechaCaso,
+                        fontSize = 16.sp,
                     )
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(
+                        items = viewModel.casosFiltrados,
+                        key = { it.id },
+                    ) { caso ->
+                        ItemCaso(
+                            caso = caso,
+                            onClick = { onCasoClick(caso) },
+                        )
+                        HorizontalDivider(
+                            color = SeparadorListaCaso,
+                            thickness = 1.dp,
+                        )
+                    }
                 }
             }
         }

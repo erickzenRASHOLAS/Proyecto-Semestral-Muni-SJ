@@ -1,5 +1,6 @@
 package com.duoc.securitysjapp.viewModel
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -22,12 +23,66 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _usuarioId = MutableStateFlow(0)
     val usuarioId: StateFlow<Int> = _usuarioId
 
+    // Errores de validación para el registro
+    private val _errorNombre = MutableStateFlow<String?>(null)
+    val errorNombre: StateFlow<String?> = _errorNombre
+
+    private val _errorCorreo = MutableStateFlow<String?>(null)
+    val errorCorreo: StateFlow<String?> = _errorCorreo
+
+    private val _errorContrasena = MutableStateFlow<String?>(null)
+    val errorContrasena: StateFlow<String?> = _errorContrasena
+
+    // Errores de validación para el inicio de sesión
+    private val _errorCorreoLogin = MutableStateFlow<String?>(null)
+    val errorCorreoLogin: StateFlow<String?> = _errorCorreoLogin
+
+    private val _errorContrasenaLogin = MutableStateFlow<String?>(null)
+    val errorContrasenaLogin: StateFlow<String?> = _errorContrasenaLogin
+
+    private val _errorGeneralLogin = MutableStateFlow<String?>(null)
+    val errorGeneralLogin: StateFlow<String?> = _errorGeneralLogin
+
     fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = ROL_VECINO) {
+        var hayError = false
+
+        if (nombreCompleto.isBlank()) {
+            _errorNombre.value = "El nombre completo es obligatorio"
+            hayError = true
+        } else if (nombreCompleto.trim().length < 3) {
+            _errorNombre.value = "El nombre debe tener al menos 3 caracteres"
+            hayError = true
+        } else {
+            _errorNombre.value = null
+        }
+
+        if (correo.isBlank()) {
+            _errorCorreo.value = "El correo electrónico es obligatorio"
+            hayError = true
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()) {
+            _errorCorreo.value = "Ingresa un correo electrónico válido (ej. usuario@dominio.com)"
+            hayError = true
+        } else {
+            _errorCorreo.value = null
+        }
+
+        if (contrasena.isBlank()) {
+            _errorContrasena.value = "La contraseña es obligatoria"
+            hayError = true
+        } else if (contrasena.length < 6) {
+            _errorContrasena.value = "La contraseña debe tener al menos 6 caracteres"
+            hayError = true
+        } else {
+            _errorContrasena.value = null
+        }
+
+        if (hayError) return
+
         viewModelScope.launch {
             repository.registrarUsuario(
                 Usuario(
-                    nombreCompleto = nombreCompleto,
-                    correo = correo,
+                    nombreCompleto = nombreCompleto.trim(),
+                    correo = correo.trim(),
                     contrasena = contrasena,
                     rol = rol
                 )
@@ -36,17 +91,74 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         }
     }
 
+    fun limpiarErrorNombre() {
+        _errorNombre.value = null
+    }
+
+    fun limpiarErrorCorreo() {
+        _errorCorreo.value = null
+    }
+
+    fun limpiarErrorContrasena() {
+        _errorContrasena.value = null
+    }
+
     fun iniciarSesion(correo: String, contrasena: String) {
-        viewModelScope.launch {
-            val usuario = repository.iniciarSesion(correo, contrasena)
-            _usuarioId.value = usuario?.id ?: 0
-            _loginExitoso.value = usuario != null
+        var hayError = false
+
+        if (correo.isBlank()) {
+            _errorCorreoLogin.value = "Ingresa tu correo electrónico"
+            hayError = true
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()) {
+            _errorCorreoLogin.value = "Ingresa un correo electrónico válido"
+            hayError = true
+        } else {
+            _errorCorreoLogin.value = null
         }
+
+        if (contrasena.isBlank()) {
+            _errorContrasenaLogin.value = "Ingresa tu contraseña"
+            hayError = true
+        } else {
+            _errorContrasenaLogin.value = null
+        }
+
+        if (hayError) return
+
+        _errorGeneralLogin.value = null
+
+        viewModelScope.launch {
+            val usuario = repository.iniciarSesion(correo.trim(), contrasena)
+            if (usuario != null) {
+                _usuarioId.value = usuario.id
+                _loginExitoso.value = true
+                _errorGeneralLogin.value = null
+            } else {
+                _loginExitoso.value = false
+                _errorGeneralLogin.value = "Correo o contraseña incorrectos"
+            }
+        }
+    }
+
+    fun limpiarErrorCorreoLogin() {
+        _errorCorreoLogin.value = null
+        _errorGeneralLogin.value = null
+    }
+
+    fun limpiarErrorContrasenaLogin() {
+        _errorContrasenaLogin.value = null
+        _errorGeneralLogin.value = null
     }
 
     fun resetEstados() {
         _loginExitoso.value = null
         _registroExitoso.value = null
+        _errorNombre.value = null
+        _errorCorreo.value = null
+        _errorContrasena.value = null
+        _errorCorreoLogin.value = null
+        _errorContrasenaLogin.value = null
+        _errorGeneralLogin.value = null
     }
 }
 

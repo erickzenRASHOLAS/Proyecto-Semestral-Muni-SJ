@@ -3,6 +3,7 @@ package com.duoc.securitysjapp.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -10,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -19,10 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +31,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -50,6 +51,10 @@ fun ProfileScreen(
     onCasosClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    var mostrarDialogoPassword by remember { mutableStateOf(false) }
+
+    var nuevaContrasena by remember { mutableStateOf("") }
+    var confirmarContrasena by remember { mutableStateOf("") }
 
     LaunchedEffect(usuarioId) {
         viewModel.cargarPerfil(usuarioId)
@@ -59,6 +64,96 @@ fun ProfileScreen(
     val correo by viewModel.correoUsuario.collectAsState()
     val rol by viewModel.rolUsuario.collectAsState()
     val fotoBitmap by viewModel.fotoBitmap.collectAsState()
+
+    val errorNueva by viewModel.errorNuevaContrasena.collectAsState()
+    val errorConfirmar by viewModel.errorConfirmarContrasena.collectAsState()
+    val cambioExitoso by viewModel.cambioContrasenaExitoso.collectAsState()
+
+    LaunchedEffect(cambioExitoso) {
+        if (cambioExitoso == true) {
+            Toast.makeText(context, "Contraseña actualizada correctamente", Toast.LENGTH_SHORT).show()
+            mostrarDialogoPassword = false
+            nuevaContrasena = ""
+            confirmarContrasena = ""
+            viewModel.resetEstadoCambioContrasena()
+        }
+    }
+
+    // Diálogo para Cambiar Contraseña
+    if (mostrarDialogoPassword) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarDialogoPassword = false
+                nuevaContrasena = ""
+                confirmarContrasena = ""
+                viewModel.resetEstadoCambioContrasena()
+            },
+            title = { Text("Cambiar Contraseña", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = nuevaContrasena,
+                        onValueChange = {
+                            nuevaContrasena = it
+                            if (errorNueva != null) viewModel.limpiarErrorNuevaContrasena()
+                        },
+                        label = { Text("Nueva contraseña") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        isError = errorNueva != null,
+                        supportingText = {
+                            if (errorNueva != null) {
+                                Text(text = errorNueva!!, color = MaterialTheme.colorScheme.error)
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = confirmarContrasena,
+                        onValueChange = {
+                            confirmarContrasena = it
+                            if (errorConfirmar != null) viewModel.limpiarErrorConfirmarContrasena()
+                        },
+                        label = { Text("Confirmar contraseña") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        isError = errorConfirmar != null,
+                        supportingText = {
+                            if (errorConfirmar != null) {
+                                Text(text = errorConfirmar!!, color = MaterialTheme.colorScheme.error)
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.cambiarContrasena(usuarioId, nuevaContrasena, confirmarContrasena)
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogoPassword = false
+                        nuevaContrasena = ""
+                        confirmarContrasena = ""
+                        viewModel.resetEstadoCambioContrasena()
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     // Launcher para tomar la foto (Selfie)
     val takePictureLauncher = rememberLauncherForActivityResult(
@@ -98,7 +193,10 @@ fun ProfileScreen(
         fotoBitmap = fotoBitmap,
         onTomarFoto = ::tomarFoto,
         onNavigateBack = onNavigateBack,
-        onChangePasswordClick = onChangePasswordClick,
+        onChangePasswordClick = {
+            mostrarDialogoPassword = true
+            onChangePasswordClick()
+        },
         onSettingsClick = onSettingsClick,
         onLogoutClick = onLogoutClick,
         onInicioClick = onInicioClick,

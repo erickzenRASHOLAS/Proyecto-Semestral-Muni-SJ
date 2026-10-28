@@ -18,4 +18,7 @@ interface UsuarioDao {
 
     @Query("UPDATE usuarios SET fotoRuta = :fotoRuta WHERE id = :id")
     suspend fun actualizarFotoRuta(id: Int, fotoRuta: String?)
+
+    @Query("UPDATE usuarios SET contrasena = :nuevaContrasena WHERE id = :id")
+    suspend fun actualizarContrasena(id: Int, nuevaContrasena: String)
 }

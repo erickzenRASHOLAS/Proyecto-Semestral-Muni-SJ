@@ -29,6 +29,16 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _fotoBitmap = MutableStateFlow<Bitmap?>(null)
     val fotoBitmap: StateFlow<Bitmap?> = _fotoBitmap
 
+    // Estados para cambio de contraseña
+    private val _errorNuevaContrasena = MutableStateFlow<String?>(null)
+    val errorNuevaContrasena: StateFlow<String?> = _errorNuevaContrasena
+
+    private val _errorConfirmarContrasena = MutableStateFlow<String?>(null)
+    val errorConfirmarContrasena: StateFlow<String?> = _errorConfirmarContrasena
+
+    private val _cambioContrasenaExitoso = MutableStateFlow<Boolean?>(null)
+    val cambioContrasenaExitoso: StateFlow<Boolean?> = _cambioContrasenaExitoso
+
     // Se llama cuando se abre la pantalla de perfil
     fun cargarPerfil(usuarioId: Int) {
         viewModelScope.launch {
@@ -63,6 +73,51 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
                 e.printStackTrace()
             }
         }
+    }
+
+    fun cambiarContrasena(usuarioId: Int, nuevaContrasena: String, confirmarContrasena: String) {
+        var hayError = false
+
+        if (nuevaContrasena.isBlank()) {
+            _errorNuevaContrasena.value = "Ingresa la nueva contraseña"
+            hayError = true
+        } else if (nuevaContrasena.length < 6) {
+            _errorNuevaContrasena.value = "La contraseña debe tener al menos 6 caracteres"
+            hayError = true
+        } else {
+            _errorNuevaContrasena.value = null
+        }
+
+        if (confirmarContrasena.isBlank()) {
+            _errorConfirmarContrasena.value = "Confirma la nueva contraseña"
+            hayError = true
+        } else if (nuevaContrasena != confirmarContrasena) {
+            _errorConfirmarContrasena.value = "Las contraseñas no coinciden"
+            hayError = true
+        } else {
+            _errorConfirmarContrasena.value = null
+        }
+
+        if (hayError) return
+
+        viewModelScope.launch {
+            repository.actualizarContrasena(usuarioId, nuevaContrasena)
+            _cambioContrasenaExitoso.value = true
+        }
+    }
+
+    fun limpiarErrorNuevaContrasena() {
+        _errorNuevaContrasena.value = null
+    }
+
+    fun limpiarErrorConfirmarContrasena() {
+        _errorConfirmarContrasena.value = null
+    }
+
+    fun resetEstadoCambioContrasena() {
+        _cambioContrasenaExitoso.value = null
+        _errorNuevaContrasena.value = null
+        _errorConfirmarContrasena.value = null
     }
 }
 

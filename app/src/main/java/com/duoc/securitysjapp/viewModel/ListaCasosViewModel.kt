@@ -16,8 +16,25 @@ class ListaCasosViewModel(
     private val soloMisCasos: Boolean, // true = "Mis casos", false = "Todos los casos"
 ) : ViewModel() {
 
-    var casos by mutableStateOf<List<Caso>>(emptyList())
+    private var todosLosCasos: List<Caso> = emptyList()
+
+    var casosFiltrados by mutableStateOf<List<Caso>>(emptyList())
         private set
+
+    var busquedaQuery by mutableStateOf("")
+        private set
+
+    var categoriaFiltro by mutableStateOf("Todas")
+        private set
+
+    val categoriasFiltro = listOf(
+        "Todas",
+        "Seguridad",
+        "Convivencia",
+        "Infraestructura",
+        "Medio ambiente",
+        "Otro",
+    )
 
     init {
         cargarCasos()
@@ -25,11 +42,45 @@ class ListaCasosViewModel(
 
     fun cargarCasos() {
         viewModelScope.launch {
-            casos = if (soloMisCasos) {
+            todosLosCasos = if (soloMisCasos) {
                 repository.getByUsuario(usuarioId)
             } else {
                 repository.getAll()
             }
+            aplicarFiltros()
+        }
+    }
+
+    fun onBusquedaQueryChange(nuevaQuery: String) {
+        busquedaQuery = nuevaQuery
+        aplicarFiltros()
+    }
+
+    fun onCategoriaFiltroChange(nuevaCategoria: String) {
+        categoriaFiltro = nuevaCategoria
+        aplicarFiltros()
+    }
+
+    fun limpiarFiltros() {
+        busquedaQuery = ""
+        categoriaFiltro = "Todas"
+        aplicarFiltros()
+    }
+
+    private fun aplicarFiltros() {
+        val query = busquedaQuery.trim().lowercase()
+        casosFiltrados = todosLosCasos.filter { caso ->
+            val coincideTexto = query.isEmpty() ||
+                    caso.descripcion.lowercase().contains(query) ||
+                    caso.ubicacion.lowercase().contains(query) ||
+                    caso.categoria.lowercase().contains(query) ||
+                    caso.prioridad.lowercase().contains(query) ||
+                    "#%04d".format(caso.id).contains(query)
+
+            val coincideCategoria = categoriaFiltro == "Todas" ||
+                    caso.categoria.equals(categoriaFiltro, ignoreCase = true)
+
+            coincideTexto && coincideCategoria
         }
     }
 
