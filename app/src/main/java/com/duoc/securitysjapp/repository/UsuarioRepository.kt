@@ -21,4 +21,8 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         usuarioDao.actualizarFotoRuta(id, fotoRuta)
     }
 
+    suspend fun actualizarContrasena(id: Int, nuevaContrasena: String) {
+        usuarioDao.actualizarContrasena(id, nuevaContrasena)
+    }
+
 }
