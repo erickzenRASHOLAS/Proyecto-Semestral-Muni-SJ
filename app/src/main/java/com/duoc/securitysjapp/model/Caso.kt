@@ -13,4 +13,5 @@ data class Caso(
     val prioridad: String,
     val fechaCreacionMillis: Long = System.currentTimeMillis(),
     val estado: String = "En derivación",
+    val fotoRuta: String? = null // Evidencia fotográfica del caso
 )

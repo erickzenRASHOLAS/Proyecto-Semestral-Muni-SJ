@@ -1,5 +1,13 @@
 package com.duoc.securitysjapp.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,11 +15,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,6 +35,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -35,11 +48,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
 import com.duoc.securitysjapp.ui.theme.BordeCampoFormulario
@@ -55,6 +74,7 @@ fun NuevoCasoScreen(
     usuarioId: Int,
     onNavigateBack: () -> Unit = {},
 ) {
+    val context = LocalContext.current
     val campoColors = OutlinedTextFieldDefaults.colors(
         unfocusedContainerColor = FondoCampoFormulario,
         focusedContainerColor = FondoCampoFormulario,
@@ -66,6 +86,38 @@ fun NuevoCasoScreen(
         focusedPlaceholderColor = TextoPlaceholder,
     )
     val formaCampo = RoundedCornerShape(12.dp)
+
+    // Launcher para tomar foto de evidencia
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            viewModel.fotoBitmap = bitmap
+        }
+    }
+
+    // Launcher para solicitar permiso de cámara
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            takePictureLauncher.launch(null)
+        }
+    }
+
+    fun tomarFoto() {
+        if (viewModel.guardando) return
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            takePictureLauncher.launch(null)
+        } else {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     if (viewModel.guardadoExitoso) {
         AlertDialog(
@@ -206,9 +258,68 @@ fun NuevoCasoScreen(
                 shape = formaCampo,
             )
 
+            Spacer(modifier = Modifier.height(20.dp))
+            EtiquetaCampo("Evidencia fotográfica (opcional)")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (viewModel.fotoBitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(formaCampo)
+                ) {
+                    Image(
+                        bitmap = viewModel.fotoBitmap!!.asImageBitmap(),
+                        contentDescription = "Evidencia capturada",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    IconButton(
+                        onClick = { viewModel.removerFoto() },
+                        enabled = !viewModel.guardando,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Eliminar foto",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            } else {
+                OutlinedButton(
+                    onClick = ::tomarFoto,
+                    enabled = !viewModel.guardando,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = formaCampo,
+                    border = BorderStroke(1.dp, BordeCampoFormulario),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = FondoCampoFormulario,
+                        contentColor = TextoEtiquetaFormulario
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = "Tomar foto",
+                        tint = AzulBotonGuardar,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Tomar foto de evidencia", color = TextoEtiquetaFormulario)
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = { viewModel.guardar(usuarioId) },
+                onClick = { viewModel.guardar(usuarioId, context) },
                 enabled = !viewModel.guardando,
                 modifier = Modifier
                     .fillMaxWidth()

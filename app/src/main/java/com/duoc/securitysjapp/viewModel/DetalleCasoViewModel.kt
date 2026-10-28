@@ -1,5 +1,7 @@
 package com.duoc.securitysjapp.viewModel
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,7 +13,10 @@ import com.duoc.securitysjapp.model.ROL_MUNICIPAL
 import com.duoc.securitysjapp.model.Usuario
 import com.duoc.securitysjapp.repository.CasoRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class DetalleCasoViewModel(
     private val casoRepository: CasoRepository,
@@ -21,6 +26,10 @@ class DetalleCasoViewModel(
 ) : ViewModel() {
 
     var caso by mutableStateOf<Caso?>(null)
+        private set
+
+    // Evidencia fotográfica
+    var fotoBitmap by mutableStateOf<Bitmap?>(null)
         private set
 
     // Nombre de quien creó el caso
@@ -50,6 +59,16 @@ class DetalleCasoViewModel(
             creadoPor = casoCargado?.let {
                 usuarioRepository.obtenerUsuarioPorId(it.usuarioId)?.nombreCompleto
             } ?: "Desconocido"
+
+            if (casoCargado != null && !casoCargado.fotoRuta.isNullOrEmpty()) {
+                withContext(Dispatchers.IO) {
+                    val file = File(casoCargado.fotoRuta)
+                    if (file.exists()) {
+                        fotoBitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    }
+                }
+            }
+
             caso = casoCargado
         }
     }

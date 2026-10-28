@@ -1,5 +1,7 @@
 package com.duoc.securitysjapp.viewModel
 
+import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,14 +11,21 @@ import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.Caso
 import com.duoc.securitysjapp.model.CasoForm
 import com.duoc.securitysjapp.repository.CasoRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
 
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)
     var guardando by mutableStateOf(false)
+
+    // Evidencia fotográfica opcional
+    var fotoBitmap by mutableStateOf<Bitmap?>(null)
 
     // Errores de validación
     var errorCategoria by mutableStateOf<String?>(null)
@@ -39,7 +48,7 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         "Urgente",
     )
 
-    fun guardar(usuarioId: Int) {
+    fun guardar(usuarioId: Int, context: Context) {
         var hayError = false
 
         if (casoForm.categoria.isBlank()) {
@@ -78,6 +87,22 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         viewModelScope.launch {
             guardando = true
             delay(1200) // Simula la respuesta al guardar el caso
+
+            var fotoRuta: String? = null
+            fotoBitmap?.let { bitmap ->
+                withContext(Dispatchers.IO) {
+                    try {
+                        val file = File(context.filesDir, "evidencia_${System.currentTimeMillis()}.jpg")
+                        FileOutputStream(file).use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                        }
+                        fotoRuta = file.absolutePath
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             repository.insert(
                 Caso(
                     usuarioId = usuarioId,
@@ -85,12 +110,17 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
                     descripcion = casoForm.descripcion.trim(),
                     ubicacion = casoForm.ubicacion.trim(),
                     prioridad = casoForm.prioridad,
+                    fotoRuta = fotoRuta,
                 )
             )
             guardando = false
             guardadoExitoso = true
             limpiarFormularioYErrores()
         }
+    }
+
+    fun removerFoto() {
+        fotoBitmap = null
     }
 
     fun limpiarErrorCategoria() { errorCategoria = null }
@@ -100,6 +130,7 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
 
     fun limpiarFormularioYErrores() {
         casoForm = CasoForm()
+        fotoBitmap = null
         errorCategoria = null
         errorDescripcion = null
         errorUbicacion = null
