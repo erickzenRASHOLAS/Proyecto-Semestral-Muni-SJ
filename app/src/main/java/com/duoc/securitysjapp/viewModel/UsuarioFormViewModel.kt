@@ -33,6 +33,16 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _errorContrasena = MutableStateFlow<String?>(null)
     val errorContrasena: StateFlow<String?> = _errorContrasena
 
+    // Errores de validación para el inicio de sesión
+    private val _errorCorreoLogin = MutableStateFlow<String?>(null)
+    val errorCorreoLogin: StateFlow<String?> = _errorCorreoLogin
+
+    private val _errorContrasenaLogin = MutableStateFlow<String?>(null)
+    val errorContrasenaLogin: StateFlow<String?> = _errorContrasenaLogin
+
+    private val _errorGeneralLogin = MutableStateFlow<String?>(null)
+    val errorGeneralLogin: StateFlow<String?> = _errorGeneralLogin
+
     fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = ROL_VECINO) {
         var hayError = false
 
@@ -94,11 +104,50 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     }
 
     fun iniciarSesion(correo: String, contrasena: String) {
-        viewModelScope.launch {
-            val usuario = repository.iniciarSesion(correo, contrasena)
-            _usuarioId.value = usuario?.id ?: 0
-            _loginExitoso.value = usuario != null
+        var hayError = false
+
+        if (correo.isBlank()) {
+            _errorCorreoLogin.value = "Ingresa tu correo electrónico"
+            hayError = true
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()) {
+            _errorCorreoLogin.value = "Ingresa un correo electrónico válido"
+            hayError = true
+        } else {
+            _errorCorreoLogin.value = null
         }
+
+        if (contrasena.isBlank()) {
+            _errorContrasenaLogin.value = "Ingresa tu contraseña"
+            hayError = true
+        } else {
+            _errorContrasenaLogin.value = null
+        }
+
+        if (hayError) return
+
+        _errorGeneralLogin.value = null
+
+        viewModelScope.launch {
+            val usuario = repository.iniciarSesion(correo.trim(), contrasena)
+            if (usuario != null) {
+                _usuarioId.value = usuario.id
+                _loginExitoso.value = true
+                _errorGeneralLogin.value = null
+            } else {
+                _loginExitoso.value = false
+                _errorGeneralLogin.value = "Correo o contraseña incorrectos"
+            }
+        }
+    }
+
+    fun limpiarErrorCorreoLogin() {
+        _errorCorreoLogin.value = null
+        _errorGeneralLogin.value = null
+    }
+
+    fun limpiarErrorContrasenaLogin() {
+        _errorContrasenaLogin.value = null
+        _errorGeneralLogin.value = null
     }
 
     fun resetEstados() {
@@ -107,6 +156,9 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         _errorNombre.value = null
         _errorCorreo.value = null
         _errorContrasena.value = null
+        _errorCorreoLogin.value = null
+        _errorContrasenaLogin.value = null
+        _errorGeneralLogin.value = null
     }
 }
 
