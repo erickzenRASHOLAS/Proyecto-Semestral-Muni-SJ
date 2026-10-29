@@ -1,6 +1,9 @@
 package com.duoc.securitysjapp.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,6 +47,8 @@ fun LoginScreen(
                 if (errorCorreo != null || errorGeneral != null) viewModel.limpiarErrorCorreoLogin()
             },
             label = { Text("Correo electrónico") },
+            // Ícono de carta al inicio del campo
+            leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
             enabled = !cargando,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             isError = errorCorreo != null || errorGeneral != null,
@@ -64,6 +69,8 @@ fun LoginScreen(
                 if (errorContrasena != null || errorGeneral != null) viewModel.limpiarErrorContrasenaLogin()
             },
             label = { Text("Contraseña") },
+            // Ícono de candado al inicio del campo
+            leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
             enabled = !cargando,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
