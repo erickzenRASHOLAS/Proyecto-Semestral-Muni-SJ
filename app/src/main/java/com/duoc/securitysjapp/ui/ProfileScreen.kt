@@ -16,10 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,13 +45,15 @@ fun ProfileScreen(
     usuarioId: Int,
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onInicioClick: () -> Unit = {},
     onCasosClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var mostrarDialogoPassword by remember { mutableStateOf(false) }
+
+    var mostrarDialogoNombre by remember { mutableStateOf(false) }
+    var nuevoNombre by remember { mutableStateOf("") }
 
     var nuevaContrasena by remember { mutableStateOf("") }
     var confirmarContrasena by remember { mutableStateOf("") }
@@ -70,6 +72,9 @@ fun ProfileScreen(
     val errorConfirmar by viewModel.errorConfirmarContrasena.collectAsState()
     val cambioExitoso by viewModel.cambioContrasenaExitoso.collectAsState()
 
+    val errorNombre by viewModel.errorNuevoNombre.collectAsState()
+    val cambioNombreExitoso by viewModel.cambioNombreExitoso.collectAsState()
+
     LaunchedEffect(cambioExitoso) {
         if (cambioExitoso == true) {
             Toast.makeText(context, "Contraseña actualizada correctamente", Toast.LENGTH_SHORT).show()
@@ -78,6 +83,58 @@ fun ProfileScreen(
             confirmarContrasena = ""
             viewModel.resetEstadoCambioContrasena()
         }
+    }
+
+    LaunchedEffect(cambioNombreExitoso) {
+        if (cambioNombreExitoso == true) {
+            Toast.makeText(context, "Nombre actualizado correctamente", Toast.LENGTH_SHORT).show()
+            mostrarDialogoNombre = false
+            viewModel.resetEstadoCambioNombre()
+        }
+    }
+
+    // Diálogo para Cambiar Nombre
+    if (mostrarDialogoNombre) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarDialogoNombre = false
+                viewModel.resetEstadoCambioNombre()
+            },
+            title = { Text("Cambiar nombre", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = nuevoNombre,
+                    onValueChange = {
+                        nuevoNombre = it
+                        if (errorNombre != null) viewModel.limpiarErrorNuevoNombre()
+                    },
+                    label = { Text("Nuevo nombre") },
+                    isError = errorNombre != null,
+                    supportingText = {
+                        if (errorNombre != null) {
+                            Text(text = errorNombre!!, color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.cambiarNombre(usuarioId, nuevoNombre) }) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogoNombre = false
+                        viewModel.resetEstadoCambioNombre()
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     // Diálogo para Cambiar Contraseña
@@ -200,7 +257,10 @@ fun ProfileScreen(
             mostrarDialogoPassword = true
             onChangePasswordClick()
         },
-        onSettingsClick = onSettingsClick,
+        onChangeNameClick = {
+            nuevoNombre = nombre // el campo parte con el nombre actual
+            mostrarDialogoNombre = true
+        },
         onLogoutClick = onLogoutClick,
         onInicioClick = onInicioClick,
         onCasosClick = onCasosClick
@@ -219,7 +279,7 @@ fun ProfileContent(
     onTomarFoto: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
+    onChangeNameClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onInicioClick: () -> Unit = {},
     onCasosClick: () -> Unit = {}
@@ -343,9 +403,9 @@ fun ProfileContent(
             )
 
             ProfileMenuItem(
-                icon = Icons.Default.Settings,
-                text = "Configuración",
-                onClick = onSettingsClick
+                icon = Icons.Default.Edit,
+                text = "Cambiar nombre",
+                onClick = onChangeNameClick
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

@@ -21,4 +21,7 @@ interface UsuarioDao {
 
     @Query("UPDATE usuarios SET contrasena = :nuevaContrasena WHERE id = :id")
     suspend fun actualizarContrasena(id: Int, nuevaContrasena: String)
+
+    @Query("UPDATE usuarios SET nombreCompleto = :nuevoNombre WHERE id = :id")
+    suspend fun actualizarNombre(id: Int, nuevoNombre: String)
 }

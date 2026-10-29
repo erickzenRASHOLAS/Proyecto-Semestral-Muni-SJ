@@ -43,6 +43,13 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _cambioContrasenaExitoso = MutableStateFlow<Boolean?>(null)
     val cambioContrasenaExitoso: StateFlow<Boolean?> = _cambioContrasenaExitoso
 
+    // Estados para cambio de nombre
+    private val _errorNuevoNombre = MutableStateFlow<String?>(null)
+    val errorNuevoNombre: StateFlow<String?> = _errorNuevoNombre
+
+    private val _cambioNombreExitoso = MutableStateFlow<Boolean?>(null)
+    val cambioNombreExitoso: StateFlow<Boolean?> = _cambioNombreExitoso
+
     // Se llama cuando se abre la pantalla de perfil
     fun cargarPerfil(usuarioId: Int) {
         viewModelScope.launch {
@@ -112,6 +119,34 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
             repository.actualizarContrasena(usuarioId, nuevaContrasena)
             _cambioContrasenaExitoso.value = true
         }
+    }
+
+    // Valida el nombre (misma regla del registro), lo guarda en Room y actualiza el que se ve en pantalla
+    fun cambiarNombre(usuarioId: Int, nuevoNombre: String) {
+        if (nuevoNombre.isBlank()) {
+            _errorNuevoNombre.value = "Ingresa el nuevo nombre"
+            return
+        }
+        if (nuevoNombre.trim().length < 3) {
+            _errorNuevoNombre.value = "El nombre debe tener al menos 3 caracteres"
+            return
+        }
+
+        _errorNuevoNombre.value = null
+        viewModelScope.launch {
+            repository.actualizarNombre(usuarioId, nuevoNombre.trim())
+            _nombreUsuario.value = nuevoNombre.trim()
+            _cambioNombreExitoso.value = true
+        }
+    }
+
+    fun limpiarErrorNuevoNombre() {
+        _errorNuevoNombre.value = null
+    }
+
+    fun resetEstadoCambioNombre() {
+        _cambioNombreExitoso.value = null
+        _errorNuevoNombre.value = null
     }
 
     fun limpiarErrorNuevaContrasena() {
