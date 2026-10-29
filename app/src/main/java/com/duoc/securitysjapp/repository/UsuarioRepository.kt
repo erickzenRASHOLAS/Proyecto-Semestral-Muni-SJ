@@ -25,4 +25,8 @@ class UsuarioRepository(private val usuarioDao: UsuarioDao) {
         usuarioDao.actualizarContrasena(id, nuevaContrasena)
     }
 
+    suspend fun actualizarNombre(id: Int, nuevoNombre: String) {
+        usuarioDao.actualizarNombre(id, nuevoNombre)
+    }
+
 }

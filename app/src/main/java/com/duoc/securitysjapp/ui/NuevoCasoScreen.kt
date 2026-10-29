@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -109,24 +108,16 @@ fun NuevoCasoScreen(
     // Launcher para pedir permiso de ubicación (precisa y aproximada)
     val ubicacionPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permisos ->
-        // Basta con que el usuario acepte uno de los dos
-        if (permisos.values.any { it }) {
-            viewModel.usarMiUbicacion(context)
-        } else {
-            viewModel.permisoUbicacionDenegado()
-        }
+    ) {
+        // Con o sin permiso el caso se guarda; sin permiso solo aparecerá en la lista, no en el mapa
+        viewModel.guardar(usuarioId, context)
     }
 
-    // Si ya hay permiso obtiene la ubicación; si no, lo pide
-    fun usarUbicacion() {
-        if (viewModel.guardando) return
-        val tienePermiso =
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-
-        if (tienePermiso) {
-            viewModel.usarMiUbicacion(context)
+    // Valida el formulario y, si falta el permiso de ubicación, lo pide antes de guardar
+    fun guardarCaso() {
+        if (!viewModel.validarFormulario()) return
+        if (viewModel.tienePermisoUbicacion(context)) {
+            viewModel.guardar(usuarioId, context)
         } else {
             ubicacionPermissionLauncher.launch(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -253,7 +244,6 @@ fun NuevoCasoScreen(
                 value = viewModel.casoForm.ubicacion,
                 onValueChange = {
                     viewModel.casoForm.ubicacion = it
-                    viewModel.limpiarCoordenadas()
                     if (viewModel.errorUbicacion != null) viewModel.limpiarErrorUbicacion()
                 },
                 enabled = !viewModel.guardando,
@@ -269,42 +259,6 @@ fun NuevoCasoScreen(
                 shape = formaCampo,
                 singleLine = true,
             )
-
-            // Botón que rellena el campo con la ubicación del dispositivo
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = ::usarUbicacion,
-                enabled = !viewModel.guardando && !viewModel.obteniendoUbicacion,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = formaCampo,
-                border = BorderStroke(1.dp, BordeCampoFormulario),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = FondoCampoFormulario,
-                    contentColor = TextoEtiquetaFormulario
-                )
-            ) {
-                if (viewModel.obteniendoUbicacion) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = AzulBotonGuardar,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = "Usar mi ubicación",
-                        tint = AzulBotonGuardar,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (viewModel.obteniendoUbicacion) "Obteniendo ubicación..." else "Usar mi ubicación",
-                    color = TextoEtiquetaFormulario
-                )
-            }
 
             Spacer(modifier = Modifier.height(20.dp))
             EtiquetaCampo("Prioridad")
@@ -385,7 +339,7 @@ fun NuevoCasoScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = { viewModel.guardar(usuarioId, context) },
+                onClick = ::guardarCaso,
                 enabled = !viewModel.guardando,
                 modifier = Modifier
                     .fillMaxWidth()
