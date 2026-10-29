@@ -22,6 +22,7 @@ import com.duoc.securitysjapp.ui.DetalleCasoScreen
 import com.duoc.securitysjapp.ui.InicioScreen
 import com.duoc.securitysjapp.ui.ListaCasosScreen
 import com.duoc.securitysjapp.ui.LoginScreen
+import com.duoc.securitysjapp.ui.MapaCasosScreen
 import com.duoc.securitysjapp.ui.NuevoCasoScreen
 import com.duoc.securitysjapp.ui.ProfileScreen
 import com.duoc.securitysjapp.ui.RegistroScreen
@@ -29,6 +30,7 @@ import com.duoc.securitysjapp.ui.theme.SecuritySJAppTheme
 import com.duoc.securitysjapp.viewModel.CasoViewModel
 import com.duoc.securitysjapp.viewModel.DetalleCasoViewModel
 import com.duoc.securitysjapp.viewModel.ListaCasosViewModel
+import com.duoc.securitysjapp.viewModel.MapaCasosViewModel
 import com.duoc.securitysjapp.viewModel.ProfileViewModel
 import com.duoc.securitysjapp.viewModel.ProfileViewModelFactory
 import com.duoc.securitysjapp.viewModel.UsuarioFormViewModel
@@ -108,6 +110,7 @@ class MainActivity : ComponentActivity() {
                                 onNuevoCasoClick = { navController.navigate("nuevo_caso/$usuarioId") },
                                 onMisCasosClick = { irAPestana("mis_casos/$usuarioId") },
                                 onTodosCasosClick = { navController.navigate("todos_casos/$usuarioId") },
+                                onMapaClick = { navController.navigate("mapa_casos/$usuarioId") },
                                 onPerfilClick = { irAPestana("perfil/$usuarioId") }
                             )
                         }
@@ -150,6 +153,24 @@ class MainActivity : ComponentActivity() {
                                 mostrarBarraInferior = false,
                                 onNavigateBack = { navController.popBackStack() },
                                 onCasoClick = { caso ->
+                                    navController.navigate("detalle_caso/${caso.id}/$usuarioId")
+                                }
+                            )
+                        }
+
+                        // Mapa con un pin por cada caso que tiene ubicación GPS
+                        composable(
+                            route = "mapa_casos/{usuarioId}",
+                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
+                            val mapaViewModel: MapaCasosViewModel = viewModel(
+                                factory = MapaCasosViewModel.provideFactory(casoRepository)
+                            )
+                            MapaCasosScreen(
+                                viewModel = mapaViewModel,
+                                onNavigateBack = { navController.popBackStack() },
+                                onVerDetalle = { caso ->
                                     navController.navigate("detalle_caso/${caso.id}/$usuarioId")
                                 }
                             )

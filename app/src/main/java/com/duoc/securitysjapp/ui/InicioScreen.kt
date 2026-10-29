@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ fun InicioScreen(
     onNuevoCasoClick: () -> Unit = {},
     onMisCasosClick: () -> Unit = {},
     onTodosCasosClick: () -> Unit = {},
+    onMapaClick: () -> Unit = {},
     onPerfilClick: () -> Unit = {},
 ) {
     LaunchedEffect(usuarioId) {
@@ -111,6 +113,11 @@ fun InicioScreen(
                 texto = "Todos los casos",
                 icono = Icons.Default.Search,
                 onClick = onTodosCasosClick,
+            )
+            BotonMenu(
+                texto = "Mapa de casos",
+                icono = Icons.Default.LocationOn,
+                onClick = onMapaClick,
             )
             BotonMenu(
                 texto = "Mi perfil",
