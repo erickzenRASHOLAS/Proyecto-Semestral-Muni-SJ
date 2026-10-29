@@ -1,6 +1,10 @@
 package com.duoc.securitysjapp.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +49,8 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
                 if (errorNombre != null) viewModel.limpiarErrorNombre()
             },
             label = { Text("Nombre completo") },
+            // Ícono de persona al inicio del campo
+            leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null) },
             enabled = !cargando,
             isError = errorNombre != null,
             supportingText = {
@@ -64,6 +70,8 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
                 if (errorCorreo != null) viewModel.limpiarErrorCorreo()
             },
             label = { Text("Correo electrónico") },
+            // Ícono de carta al inicio del campo
+            leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
             enabled = !cargando,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             isError = errorCorreo != null,
@@ -84,6 +92,8 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
                 if (errorContrasena != null) viewModel.limpiarErrorContrasena()
             },
             label = { Text("Contraseña") },
+            // Ícono de candado al inicio del campo
+            leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
             enabled = !cargando,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
