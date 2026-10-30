@@ -90,5 +90,5 @@ app/src/main/java/com/duoc/securitysjapp/
 
 ## Gestión del proyecto
 
-- Tablero Trello: https://trello.com/invite/b/6abfa9047c2bf28c8a633aff/ATTI37e2101929948db9395b639a87df8721DBE0F685/tablero-proyecto-semestral-muni-sj 
+- Tablero Trello: https://trello.com/b/6abfa9047c2bf28c8a633aff
 - Video de demostración: https://youtu.be/oMdiWkoXN98
