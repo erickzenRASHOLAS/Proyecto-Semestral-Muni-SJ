@@ -1,5 +1,6 @@
 package com.duoc.securitysjapp
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -50,6 +51,11 @@ class MainActivity : ComponentActivity() {
         val usuarioViewModelFactory = UsuarioFormViewModelFactory(usuarioRepository)
         val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository)
 
+        // Gestión de persistencia de sesión con SharedPreferences
+        val sharedPreferences = applicationContext.getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
+        val usuarioGuardadoId = sharedPreferences.getInt("usuario_id", -1)
+        val startDestination = if (usuarioGuardadoId != -1) "inicio/$usuarioGuardadoId" else "login"
+
         setContent {
             SecuritySJAppTheme {
                 Surface(
@@ -66,7 +72,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    NavHost(navController = navController, startDestination = "login") {
+                    NavHost(navController = navController, startDestination = startDestination) {
 
                         composable("login") {
                             val authViewModel: UsuarioFormViewModel =
@@ -74,6 +80,9 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onLoginExitoso = { usuarioId ->
+                                    // Guarda la sesión del usuario en SharedPreferences
+                                    sharedPreferences.edit().putInt("usuario_id", usuarioId).apply()
+
                                     // Entra al menú de inicio con el id del usuario logueado
                                     navController.navigate("inicio/$usuarioId") {
                                         popUpTo("login") { inclusive = true }
@@ -208,7 +217,10 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onCasosClick = { irAPestana("mis_casos/$usuarioId") },
                                 onLogoutClick = {
-                                    // Vuelve al login y limpia compléto el historial de navegación
+                                    // Borra la sesión guardada en SharedPreferences
+                                    sharedPreferences.edit().clear().apply()
+
+                                    // Vuelve al login y limpia completo el historial de navegación
                                     navController.navigate("login") {
                                         popUpTo(0) { inclusive = true }
                                     }
