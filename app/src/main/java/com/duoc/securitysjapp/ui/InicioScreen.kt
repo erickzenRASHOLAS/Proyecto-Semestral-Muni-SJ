@@ -1,7 +1,9 @@
 package com.duoc.securitysjapp.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,12 +29,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoc.securitysjapp.R
 import com.duoc.securitysjapp.ui.theme.AzulBotonGuardar
 import com.duoc.securitysjapp.ui.theme.AzulOscuroTopBar
 import com.duoc.securitysjapp.ui.theme.SeparadorListaCaso
@@ -60,7 +65,16 @@ fun InicioScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = "San Joaquín", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    // Logo de la municipalidad a la izquierda del título
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_muni_san_joaquin),
+                            contentDescription = "Logo Municipalidad de San Joaquín",
+                            modifier = Modifier.height(40.dp),
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "San Joaquín", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = AzulOscuroTopBar,

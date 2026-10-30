@@ -61,11 +61,6 @@ class ListaCasosViewModel(
         aplicarFiltros()
     }
 
-    fun limpiarFiltros() {
-        busquedaQuery = ""
-        categoriaFiltro = "Todas"
-        aplicarFiltros()
-    }
 
     private fun aplicarFiltros() {
         val query = busquedaQuery.trim().lowercase()

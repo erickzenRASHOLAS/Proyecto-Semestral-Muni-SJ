@@ -61,6 +61,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.7.2")
 
     //¿que hace?¿porque sale rojo?
+    //Es una version antigua por eso sale rojo y es para importar depencias
     // kapt("androidx.room:room-compiler:2.6.1")
 
 
