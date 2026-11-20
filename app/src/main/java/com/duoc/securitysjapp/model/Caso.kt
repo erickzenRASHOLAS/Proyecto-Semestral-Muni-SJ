@@ -14,6 +14,6 @@ data class Caso(
     val fechaCreacionMillis: Long = System.currentTimeMillis(),
     val estado: String = "En derivación",
     val fotoRuta: String? = null, // Evidencia fotográfica del caso
-    val latitud: Double? = null, // Coordenadas (solo si se usó "Usar mi ubicación")
+    val latitud: Double? = null, // Coordenadas GPS (null si no se dio permiso de ubicación)
     val longitud: Double? = null
 )

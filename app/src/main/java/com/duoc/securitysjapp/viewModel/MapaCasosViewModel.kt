@@ -24,10 +24,10 @@ class MapaCasosViewModel(private val repository: CasoRepository) : ViewModel() {
         cargarCasos()
     }
 
-    // Se llama una sola vez al crear el ViewModel: lee la base de datos y guarda los casos con GPS
+    // Se llama una sola vez al crear el ViewModel: pide al repositorio los casos con GPS
     private fun cargarCasos() {
         viewModelScope.launch {
-            casosConUbicacion = repository.getAll().filter { it.latitud != null && it.longitud != null }
+            casosConUbicacion = repository.getConUbicacion()
         }
     }
 

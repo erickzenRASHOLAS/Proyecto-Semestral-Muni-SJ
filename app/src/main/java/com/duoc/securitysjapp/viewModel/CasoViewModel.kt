@@ -1,33 +1,25 @@
 package com.duoc.securitysjapp.viewModel
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
 import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.Caso
 import com.duoc.securitysjapp.model.CasoForm
 import com.duoc.securitysjapp.repository.CasoRepository
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import kotlinx.coroutines.Dispatchers
+import com.duoc.securitysjapp.repository.FotoRepository
+import com.duoc.securitysjapp.repository.UbicacionRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import java.io.File
-import java.io.FileOutputStream
 
-class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
+class CasoViewModel(
+    private val repository: CasoRepository,
+    private val ubicacionRepository: UbicacionRepository,
+    private val fotoRepository: FotoRepository,
+) : ViewModel() {
 
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)
@@ -57,7 +49,7 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         "Urgente",
     )
 
-    // Revisa los campos del formulario y devuelve true si todoo está correcto
+    // Revisa los campos del formulario y devuelve true si toodo está correcto
     fun validarFormulario(): Boolean {
         var hayError = false
 
@@ -96,25 +88,20 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
     }
 
     // Guarda el caso. Si el usuario dio permiso, se guarda también su ubicación para mostrar el pin en el mapa
-    fun guardar(usuarioId: Int, context: Context) {
+    fun guardar(usuarioId: Int) {
         viewModelScope.launch {
             guardando = true
-            val ubicacionGps = obtenerUbicacion(context)
+
+            // El repositorio pide el GPS (devuelve null si no hay permiso o no responde)
+            val ubicacionGps = ubicacionRepository.obtenerUbicacion()
             delay(1200) // Simula la respuesta al guardar el caso
 
-            var fotoRuta: String? = null
-            fotoBitmap?.let { bitmap ->
-                withContext(Dispatchers.IO) {
-                    try {
-                        val file = File(context.filesDir, "evidencia_${System.currentTimeMillis()}.jpg")
-                        FileOutputStream(file).use { out ->
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                        }
-                        fotoRuta = file.absolutePath
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+            // Si hay foto, el repositorio la guarda como archivo y devuelve su ruta
+            val foto = fotoBitmap
+            val fotoRuta = if (foto != null) {
+                fotoRepository.guardarFoto("evidencia_${System.currentTimeMillis()}.jpg", foto)
+            } else {
+                null
             }
 
             repository.insert(
@@ -135,27 +122,9 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
         }
     }
 
-    // Indica si el usuario ya aceptó el permiso de ubicación (precisa o aproximada)
-    fun tienePermisoUbicacion(context: Context): Boolean {
-        return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
-
-    // Pide la ubicación actual al GPS. Devuelve null si no hay permiso o no se pudo obtener
-    @SuppressLint("MissingPermission") // el permiso se revisa en la primera línea
-    private suspend fun obtenerUbicacion(context: Context): Location? {
-        if (!tienePermisoUbicacion(context)) return null
-
-        // Cliente de ubicación de Google (el mismo que usa GPS.kt del ejemplo)
-        val cliente = LocationServices.getFusedLocationProviderClient(context)
-        return try {
-            // Espera máximo 8 segundos para no dejar la pantalla cargando
-            withTimeoutOrNull(8000) {
-                cliente.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
-            }
-        } catch (e: Exception) {
-            null
-        }
+    // Pregunta al repositorio si el usuario ya aceptó el permiso de ubicación
+    fun tienePermisoUbicacion(): Boolean {
+        return ubicacionRepository.tienePermisoUbicacion()
     }
 
     fun removerFoto() {
@@ -181,11 +150,15 @@ class CasoViewModel(private val repository: CasoRepository) : ViewModel() {
     }
 
     companion object {
-        fun provideFactory(repository: CasoRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            repository: CasoRepository,
+            ubicacionRepository: UbicacionRepository,
+            fotoRepository: FotoRepository,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return CasoViewModel(repository) as T
+                    return CasoViewModel(repository, ubicacionRepository, fotoRepository) as T
                 }
             }
     }

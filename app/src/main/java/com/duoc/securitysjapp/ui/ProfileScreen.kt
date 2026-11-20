@@ -218,7 +218,7 @@ fun ProfileScreen(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            viewModel.guardarFotoPerfil(context, usuarioId, bitmap)
+            viewModel.guardarFotoPerfil(usuarioId, bitmap)
         }
     }
 

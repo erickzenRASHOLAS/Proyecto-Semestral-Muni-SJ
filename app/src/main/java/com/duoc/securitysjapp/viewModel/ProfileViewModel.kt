@@ -1,22 +1,20 @@
 package com.duoc.securitysjapp.viewModel
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.duoc.securitysjapp.repository.FotoRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
 
-class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() {
+class ProfileViewModel(
+    private val repository: UsuarioRepository,
+    private val fotoRepository: FotoRepository,
+) : ViewModel() {
 
     private val _nombreUsuario = MutableStateFlow("Cargando...")
     val nombreUsuario: StateFlow<String> = _nombreUsuario
@@ -32,6 +30,10 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
 
     private val _procesandoFoto = MutableStateFlow(false)
     val procesandoFoto: StateFlow<Boolean> = _procesandoFoto
+
+    // Es true cuando el usuario guardado en la sesión ya no existe en la base de datos
+    private val _sesionInvalida = MutableStateFlow(false)
+    val sesionInvalida: StateFlow<Boolean> = _sesionInvalida
 
     // Estados para cambio de contraseña
     private val _errorNuevaContrasena = MutableStateFlow<String?>(null)
@@ -50,7 +52,7 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _cambioNombreExitoso = MutableStateFlow<Boolean?>(null)
     val cambioNombreExitoso: StateFlow<Boolean?> = _cambioNombreExitoso
 
-    // Se llama cuando se abre la pantalla de perfil
+    // Se llama cuando se abre la pantalla de inicio o la de perfil
     fun cargarPerfil(usuarioId: Int) {
         viewModelScope.launch {
             val usuario = repository.obtenerUsuarioPorId(usuarioId)
@@ -59,31 +61,27 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
                 _correoUsuario.value = usuario.correo
                 _rolUsuario.value = usuario.rol
 
-                if (!usuario.fotoRuta.isNullOrEmpty()) {
-                    withContext(Dispatchers.IO) {
-                        val file = File(usuario.fotoRuta)
-                        if (file.exists()) {
-                            _fotoBitmap.value = BitmapFactory.decodeFile(file.absolutePath)
-                        }
-                    }
-                }
+                // El repositorio lee la foto desde el archivo (null si el usuario no tiene foto)
+                _fotoBitmap.value = fotoRepository.cargarFoto(usuario.fotoRuta)
+            } else {
+                // La sesión guardada apunta a un usuario que ya no existe
+                _sesionInvalida.value = true
             }
         }
     }
 
-    fun guardarFotoPerfil(context: Context, usuarioId: Int, bitmap: Bitmap) {
-        viewModelScope.launch(Dispatchers.IO) {
+    fun guardarFotoPerfil(usuarioId: Int, bitmap: Bitmap) {
+        viewModelScope.launch {
             try {
                 _procesandoFoto.value = true
                 delay(1200) // Simula el procesamiento y guardado de la selfie
-                val file = File(context.filesDir, "perfil_$usuarioId.jpg")
-                FileOutputStream(file).use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+
+                // El repositorio guarda el archivo y devuelve su ruta; esa ruta se guarda en Room
+                val ruta = fotoRepository.guardarFoto("perfil_$usuarioId.jpg", bitmap)
+                if (ruta != null) {
+                    repository.actualizarFotoRuta(usuarioId, ruta)
+                    _fotoBitmap.value = bitmap
                 }
-                repository.actualizarFotoRuta(usuarioId, file.absolutePath)
-                _fotoBitmap.value = bitmap
-            } catch (e: Exception) {
-                e.printStackTrace()
             } finally {
                 _procesandoFoto.value = false
             }
@@ -165,12 +163,13 @@ class ProfileViewModel(private val repository: UsuarioRepository) : ViewModel() 
 }
 
 class ProfileViewModelFactory(
-    private val repository: UsuarioRepository
+    private val repository: UsuarioRepository,
+    private val fotoRepository: FotoRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            return ProfileViewModel(repository) as T
+            return ProfileViewModel(repository, fotoRepository) as T
         }
         throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     }

@@ -55,11 +55,18 @@ fun InicioScreen(
     onTodosCasosClick: () -> Unit = {},
     onMapaClick: () -> Unit = {},
     onPerfilClick: () -> Unit = {},
+    onSesionInvalida: () -> Unit = {},
 ) {
     LaunchedEffect(usuarioId) {
         viewModel.cargarPerfil(usuarioId)
     }
     val nombre by viewModel.nombreUsuario.collectAsState()
+
+    // Si el usuario de la sesión guardada ya no existe, se avisa para volver al login
+    val sesionInvalida by viewModel.sesionInvalida.collectAsState()
+    LaunchedEffect(sesionInvalida) {
+        if (sesionInvalida) onSesionInvalida()
+    }
 
     Scaffold(
         topBar = {

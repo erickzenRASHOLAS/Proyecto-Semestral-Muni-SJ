@@ -110,14 +110,14 @@ fun NuevoCasoScreen(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) {
         // Con o sin permiso el caso se guarda; sin permiso solo aparecerá en la lista, no en el mapa
-        viewModel.guardar(usuarioId, context)
+        viewModel.guardar(usuarioId)
     }
 
     // Valida el formulario y, si falta el permiso de ubicación, lo pide antes de guardar
     fun guardarCaso() {
         if (!viewModel.validarFormulario()) return
-        if (viewModel.tienePermisoUbicacion(context)) {
-            viewModel.guardar(usuarioId, context)
+        if (viewModel.tienePermisoUbicacion()) {
+            viewModel.guardar(usuarioId)
         } else {
             ubicacionPermissionLauncher.launch(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)

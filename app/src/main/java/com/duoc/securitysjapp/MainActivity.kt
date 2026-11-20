@@ -1,6 +1,5 @@
 package com.duoc.securitysjapp
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +16,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.duoc.securitysjapp.model.AppDatabase
 import com.duoc.securitysjapp.repository.CasoRepository
+import com.duoc.securitysjapp.repository.FotoRepository
+import com.duoc.securitysjapp.repository.SesionRepository
+import com.duoc.securitysjapp.repository.UbicacionRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
 import com.duoc.securitysjapp.ui.CierreCasoScreen
 import com.duoc.securitysjapp.ui.DetalleCasoScreen
@@ -44,17 +46,21 @@ class MainActivity : ComponentActivity() {
 
         // Inicializa la Base de Datos Room
         val database = AppDatabase.getDatabase(applicationContext)
-        // Repositorios: reciben el DAO correspondiente
+        // Repositorios de datos: reciben el DAO correspondiente
         val usuarioRepository = UsuarioRepository(database.usuarioDao())
         val casoRepository = CasoRepository(database.casoDao())
-        // Factories para inyectar el repositorio en los ViewModels
+        // Repositorios del dispositivo: reciben el contexto de la app
+        val sesionRepository = SesionRepository(applicationContext) // sesión iniciada
+        val fotoRepository = FotoRepository(applicationContext) // fotos guardadas como archivo
+        val ubicacionRepository = UbicacionRepository(applicationContext) // GPS
+        // Factories para inyectar los repositorios en los ViewModels
         val usuarioViewModelFactory = UsuarioFormViewModelFactory(usuarioRepository)
-        val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository)
+        val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository, fotoRepository)
 
-        // Gestión de persistencia de sesión con SharedPreferences
-        val sharedPreferences = applicationContext.getSharedPreferences("security_prefs", Context.MODE_PRIVATE)
-        val usuarioGuardadoId = sharedPreferences.getInt("usuario_id", -1)
-        val startDestination = if (usuarioGuardadoId != -1) "inicio/$usuarioGuardadoId" else "login"
+        // Si hay una sesión guardada se abre el menú de inicio; si no, el login.
+        // El id del usuario guardado llega a "inicio" por el valor por defecto de su argumento
+        val usuarioGuardadoId = sesionRepository.obtenerUsuarioId()
+        val startDestination = if (usuarioGuardadoId != SesionRepository.SIN_SESION) "inicio/{usuarioId}" else "login"
 
         setContent {
             SecuritySJAppTheme {
@@ -80,8 +86,8 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onLoginExitoso = { usuarioId ->
-                                    // Guarda la sesión del usuario en SharedPreferences
-                                    sharedPreferences.edit().putInt("usuario_id", usuarioId).apply()
+                                    // Guarda la sesión para no pedir el login la próxima vez
+                                    sesionRepository.guardarSesion(usuarioId)
 
                                     // Entra al menú de inicio con el id del usuario logueado
                                     navController.navigate("inicio/$usuarioId") {
@@ -108,7 +114,13 @@ class MainActivity : ComponentActivity() {
                         // Menú principal
                         composable(
                             route = "inicio/{usuarioId}",
-                            arguments = listOf(navArgument("usuarioId") { type = NavType.IntType })
+                            arguments = listOf(
+                                navArgument("usuarioId") {
+                                    type = NavType.IntType
+                                    // Si la app abre con la sesión guardada, el id viene de aquí
+                                    defaultValue = usuarioGuardadoId
+                                }
+                            )
                         ) { backStackEntry ->
                             val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
                             val profileViewModel: ProfileViewModel =
@@ -120,7 +132,14 @@ class MainActivity : ComponentActivity() {
                                 onMisCasosClick = { irAPestana("mis_casos/$usuarioId") },
                                 onTodosCasosClick = { navController.navigate("todos_casos/$usuarioId") },
                                 onMapaClick = { navController.navigate("mapa_casos/$usuarioId") },
-                                onPerfilClick = { irAPestana("perfil/$usuarioId") }
+                                onPerfilClick = { irAPestana("perfil/$usuarioId") },
+                                onSesionInvalida = {
+                                    // El usuario guardado ya no existe: se borra la sesión y se vuelve al login
+                                    sesionRepository.cerrarSesion()
+                                    navController.navigate("login") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
                             )
                         }
 
@@ -191,7 +210,7 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val usuarioId = backStackEntry.arguments?.getInt("usuarioId") ?: 0
                             val casoViewModel: CasoViewModel = viewModel(
-                                factory = CasoViewModel.provideFactory(casoRepository)
+                                factory = CasoViewModel.provideFactory(casoRepository, ubicacionRepository, fotoRepository)
                             )
                             NuevoCasoScreen(
                                 viewModel = casoViewModel,
@@ -217,8 +236,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onCasosClick = { irAPestana("mis_casos/$usuarioId") },
                                 onLogoutClick = {
-                                    // Borra la sesión guardada en SharedPreferences
-                                    sharedPreferences.edit().clear().apply()
+                                    // Borra la sesión guardada
+                                    sesionRepository.cerrarSesion()
 
                                     // Vuelve al login y limpia completo el historial de navegación
                                     navController.navigate("login") {
@@ -241,7 +260,7 @@ class MainActivity : ComponentActivity() {
                             val detalleViewModel: DetalleCasoViewModel = viewModel(
                                 key = "detalleCaso_$casoId",
                                 factory = DetalleCasoViewModel.provideFactory(
-                                    casoRepository, usuarioRepository, casoId, usuarioId
+                                    casoRepository, usuarioRepository, fotoRepository, casoId, usuarioId
                                 )
                             )
 
