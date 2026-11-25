@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.model.ROL_VECINO
 import com.duoc.securitysjapp.model.Usuario
 import com.duoc.securitysjapp.repository.UsuarioRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -23,11 +22,9 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _registroExitoso = MutableStateFlow<Boolean?>(null)
     val registroExitoso: StateFlow<Boolean?> = _registroExitoso
 
-    // Id del usuario que inició sesión (se necesita para cargar su perfil)
     private val _usuarioId = MutableStateFlow(0)
     val usuarioId: StateFlow<Int> = _usuarioId
 
-    // Errores de validación para el registro
     private val _errorNombre = MutableStateFlow<String?>(null)
     val errorNombre: StateFlow<String?> = _errorNombre
 
@@ -37,7 +34,9 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _errorContrasena = MutableStateFlow<String?>(null)
     val errorContrasena: StateFlow<String?> = _errorContrasena
 
-    // Errores de validación para el inicio de sesión
+    private val _errorGeneralRegistro = MutableStateFlow<String?>(null)
+    val errorGeneralRegistro: StateFlow<String?> = _errorGeneralRegistro
+
     private val _errorCorreoLogin = MutableStateFlow<String?>(null)
     val errorCorreoLogin: StateFlow<String?> = _errorCorreoLogin
 
@@ -47,7 +46,39 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
     private val _errorGeneralLogin = MutableStateFlow<String?>(null)
     val errorGeneralLogin: StateFlow<String?> = _errorGeneralLogin
 
-    fun registrarUsuario(nombreCompleto: String, correo: String, contrasena: String, rol: String = ROL_VECINO) {
+    private var restauracionIniciada = false
+
+    /** Recupera la sesión guardada, validando el JWT contra GET /auth/me. */
+    fun restaurarSesion() {
+        if (restauracionIniciada) return
+        restauracionIniciada = true
+        if (!repository.hayTokenGuardado()) return
+
+        viewModelScope.launch {
+            _cargando.value = true
+            try {
+                val usuario = repository.restaurarSesion()
+                if (usuario != null) {
+                    _usuarioId.value = usuario.id
+                    _loginExitoso.value = true
+                    _errorGeneralLogin.value = null
+                }
+            } catch (error: Exception) {
+                _errorGeneralLogin.value = error.message
+                    ?: "No se pudo validar la sesión. Comprueba tu conexión e inicia sesión nuevamente."
+            } finally {
+                _cargando.value = false
+            }
+        }
+    }
+
+    /** El registro se realiza en AuthUsuarios; Room no almacena la contraseña. */
+    fun registrarUsuario(
+        nombreCompleto: String,
+        correo: String,
+        contrasena: String,
+        rol: String = ROL_VECINO
+    ) {
         var hayError = false
 
         if (nombreCompleto.isBlank()) {
@@ -80,35 +111,45 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
             _errorContrasena.value = null
         }
 
+        if (rol != "Vecino" && rol != "Municipal") {
+            _errorGeneralRegistro.value = "Selecciona un perfil válido."
+            hayError = true
+        } else {
+            _errorGeneralRegistro.value = null
+        }
+
         if (hayError) return
 
         viewModelScope.launch {
             _cargando.value = true
-            delay(1200) // Simula comunicación con servidor
-            repository.registrarUsuario(
-                Usuario(
-                    nombreCompleto = nombreCompleto.trim(),
-                    correo = correo.trim(),
-                    contrasena = contrasena,
-                    rol = rol
+            _registroExitoso.value = null
+            try {
+                repository.registrarUsuario(
+                    Usuario(
+                        nombreCompleto = nombreCompleto.trim(),
+                        correo = correo.trim().lowercase(),
+                        // La contraseña se envía directamente a Xano y no se guarda en Room.
+                        contrasena = contrasena,
+                        rol = rol
+                    )
                 )
-            )
-            _cargando.value = false
-            _registroExitoso.value = true
+                _registroExitoso.value = true
+                _errorGeneralRegistro.value = null
+            } catch (error: Exception) {
+                _registroExitoso.value = false
+                _errorGeneralRegistro.value = error.message
+                    ?: "No se pudo completar el registro. Inténtalo nuevamente."
+            } finally {
+                _cargando.value = false
+            }
         }
     }
 
-    fun limpiarErrorNombre() {
-        _errorNombre.value = null
-    }
+    fun limpiarErrorNombre() { _errorNombre.value = null }
+    fun limpiarErrorCorreo() { _errorCorreo.value = null }
+    fun limpiarErrorContrasena() { _errorContrasena.value = null }
 
-    fun limpiarErrorCorreo() {
-        _errorCorreo.value = null
-    }
-
-    fun limpiarErrorContrasena() {
-        _errorContrasena.value = null
-    }
+    fun limpiarErrorGeneralRegistro() { _errorGeneralRegistro.value = null }
 
     fun iniciarSesion(correo: String, contrasena: String) {
         var hayError = false
@@ -133,19 +174,20 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         if (hayError) return
 
         _errorGeneralLogin.value = null
-
         viewModelScope.launch {
             _cargando.value = true
-            delay(1200) // Simula comunicación con servidor
-            val usuario = repository.iniciarSesion(correo.trim(), contrasena)
-            _cargando.value = false
-            if (usuario != null) {
+            _loginExitoso.value = null
+            try {
+                val usuario = repository.iniciarSesion(correo.trim(), contrasena)
                 _usuarioId.value = usuario.id
                 _loginExitoso.value = true
                 _errorGeneralLogin.value = null
-            } else {
+            } catch (error: Exception) {
                 _loginExitoso.value = false
-                _errorGeneralLogin.value = "Correo o contraseña incorrectos"
+                _errorGeneralLogin.value = error.message
+                    ?: "No se pudo iniciar sesión. Comprueba tus credenciales y conexión."
+            } finally {
+                _cargando.value = false
             }
         }
     }
@@ -167,6 +209,7 @@ class UsuarioFormViewModel(private val repository: UsuarioRepository) : ViewMode
         _errorNombre.value = null
         _errorCorreo.value = null
         _errorContrasena.value = null
+        _errorGeneralRegistro.value = null
         _errorCorreoLogin.value = null
         _errorContrasenaLogin.value = null
         _errorGeneralLogin.value = null

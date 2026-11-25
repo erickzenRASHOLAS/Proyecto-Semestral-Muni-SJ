@@ -146,7 +146,7 @@ fun NuevoCasoScreen(
                 onNavigateBack()
             },
             title = { Text("Caso guardado") },
-            text = { Text("El caso se registró correctamente.") },
+            text = { Text(viewModel.mensajeGuardado) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.consumirGuardadoExitoso()

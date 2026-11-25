@@ -12,7 +12,6 @@ import com.duoc.securitysjapp.model.CasoForm
 import com.duoc.securitysjapp.repository.CasoRepository
 import com.duoc.securitysjapp.repository.FotoRepository
 import com.duoc.securitysjapp.repository.UbicacionRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class CasoViewModel(
@@ -24,6 +23,7 @@ class CasoViewModel(
     var casoForm: CasoForm by mutableStateOf(CasoForm())
     var guardadoExitoso by mutableStateOf(false)
     var guardando by mutableStateOf(false)
+    var mensajeGuardado by mutableStateOf("")
 
     // Evidencia fotográfica opcional
     var fotoBitmap by mutableStateOf<Bitmap?>(null)
@@ -91,34 +91,44 @@ class CasoViewModel(
     fun guardar(usuarioId: Int) {
         viewModelScope.launch {
             guardando = true
+            try {
+                // El repositorio pide el GPS (devuelve null si no hay permiso o no responde)
+                val ubicacionGps = ubicacionRepository.obtenerUbicacion()
 
-            // El repositorio pide el GPS (devuelve null si no hay permiso o no responde)
-            val ubicacionGps = ubicacionRepository.obtenerUbicacion()
-            delay(1200) // Simula la respuesta al guardar el caso
+                // Si hay foto, el repositorio la guarda como archivo y devuelve su ruta.
+                val foto = fotoBitmap
+                val fotoRuta = if (foto != null) {
+                    fotoRepository.guardarFoto("evidencia_${System.currentTimeMillis()}.jpg", foto)
+                } else {
+                    null
+                }
 
-            // Si hay foto, el repositorio la guarda como archivo y devuelve su ruta
-            val foto = fotoBitmap
-            val fotoRuta = if (foto != null) {
-                fotoRepository.guardarFoto("evidencia_${System.currentTimeMillis()}.jpg", foto)
-            } else {
-                null
-            }
-
-            repository.insert(
-                Caso(
-                    usuarioId = usuarioId,
-                    categoria = casoForm.categoria,
-                    descripcion = casoForm.descripcion.trim(),
-                    ubicacion = casoForm.ubicacion.trim(),
-                    prioridad = casoForm.prioridad,
-                    fotoRuta = fotoRuta,
-                    latitud = ubicacionGps?.latitude,
-                    longitud = ubicacionGps?.longitude,
+                val resultado = repository.insert(
+                    Caso(
+                        usuarioId = usuarioId,
+                        categoria = casoForm.categoria,
+                        descripcion = casoForm.descripcion.trim(),
+                        ubicacion = casoForm.ubicacion.trim(),
+                        prioridad = casoForm.prioridad,
+                        fotoRuta = fotoRuta,
+                        latitud = ubicacionGps?.latitude,
+                        longitud = ubicacionGps?.longitude
+                    )
                 )
-            )
-            guardando = false
-            guardadoExitoso = true
-            limpiarFormularioYErrores()
+                mensajeGuardado = if (resultado.sincronizado) {
+                    "El caso se guardó en Room y se sincronizó con Xano."
+                } else {
+                    "El caso se guardó en este dispositivo, pero Xano rechazó o no recibió la solicitud. " +
+                        "Se intentará sincronizar más tarde. Detalle: ${resultado.error ?: "sin detalle"}"
+                }
+                guardadoExitoso = true
+                limpiarFormularioYErrores()
+            } catch (error: Exception) {
+                mensajeGuardado = "No se pudo guardar el caso: ${error.message ?: "Error inesperado"}"
+                guardadoExitoso = true
+            } finally {
+                guardando = false
+            }
         }
     }
 
@@ -147,6 +157,7 @@ class CasoViewModel(
 
     fun consumirGuardadoExitoso() {
         guardadoExitoso = false
+        mensajeGuardado = ""
     }
 
     companion object {

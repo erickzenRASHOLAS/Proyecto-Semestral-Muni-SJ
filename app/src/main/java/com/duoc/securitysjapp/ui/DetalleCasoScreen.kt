@@ -218,6 +218,16 @@ private fun ContenidoDetalleCaso(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        viewModel.mensajeCierre?.let { mensaje ->
+            Text(
+                text = mensaje,
+                color = Color(0xFFB3261E),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         Text(
             text = "Descripción",
             color = AzulOscuroTopBar,
@@ -237,6 +247,7 @@ private fun ContenidoDetalleCaso(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onCerrarCaso,
+                enabled = !viewModel.cerrandoCaso,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -247,7 +258,7 @@ private fun ContenidoDetalleCaso(
                 ),
             ) {
                 Text(
-                    text = "Cerrar caso",
+                    text = if (viewModel.cerrandoCaso) "Cerrando..." else "Cerrar caso",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                 )

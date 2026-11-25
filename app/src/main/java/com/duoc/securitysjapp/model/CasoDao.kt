@@ -2,6 +2,8 @@ package com.duoc.securitysjapp.model
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.Update
 
@@ -9,6 +11,9 @@ import androidx.room.Update
 interface CasoDao {
     @Insert
     suspend fun insert(caso: Caso): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertarOActualizar(caso: Caso): Long
 
     @Update
     suspend fun update(caso: Caso)
@@ -27,4 +32,14 @@ interface CasoDao {
 
     @Query("SELECT * FROM casos WHERE id = :id")
     suspend fun getById(id: Long): Caso?
+
+    @Query("SELECT * FROM casos WHERE xanoId = :xanoId LIMIT 1")
+    suspend fun getByXanoId(xanoId: Long): Caso?
+
+    // Casos guardados localmente que todavía no tienen ID remoto.
+    @Query("SELECT * FROM casos WHERE xanoId IS NULL ORDER BY id ASC")
+    suspend fun getPendientes(): List<Caso>
+
+    @Delete
+    suspend fun eliminar(caso: Caso)
 }

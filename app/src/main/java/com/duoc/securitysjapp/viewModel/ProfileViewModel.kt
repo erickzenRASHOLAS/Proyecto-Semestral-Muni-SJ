@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.duoc.securitysjapp.repository.FotoRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -74,7 +73,6 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 _procesandoFoto.value = true
-                delay(1200) // Simula el procesamiento y guardado de la selfie
 
                 // El repositorio guarda el archivo y devuelve su ruta; esa ruta se guarda en Room
                 val ruta = fotoRepository.guardarFoto("perfil_$usuarioId.jpg", bitmap)
@@ -113,10 +111,9 @@ class ProfileViewModel(
 
         if (hayError) return
 
-        viewModelScope.launch {
-            repository.actualizarContrasena(usuarioId, nuevaContrasena)
-            _cambioContrasenaExitoso.value = true
-        }
+        // AuthUsuarios aún no publica un endpoint para cambiar contraseñas; no se altera solo Room.
+        _cambioContrasenaExitoso.value = false
+        _errorNuevaContrasena.value = "El cambio de contraseña aún no está conectado a Xano."
     }
 
     // Valida el nombre (misma regla del registro), lo guarda en Room y actualiza el que se ve en pantalla

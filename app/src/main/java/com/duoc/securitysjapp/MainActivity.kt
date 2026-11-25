@@ -15,11 +15,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.duoc.securitysjapp.model.AppDatabase
+import com.duoc.securitysjapp.remote.RetrofitInstance
+import com.duoc.securitysjapp.remote.AuthRetrofitInstance
 import com.duoc.securitysjapp.repository.CasoRepository
 import com.duoc.securitysjapp.repository.FotoRepository
 import com.duoc.securitysjapp.repository.SesionRepository
 import com.duoc.securitysjapp.repository.UbicacionRepository
 import com.duoc.securitysjapp.repository.UsuarioRepository
+import com.duoc.securitysjapp.repository.XanoRepository
 import com.duoc.securitysjapp.ui.CierreCasoScreen
 import com.duoc.securitysjapp.ui.DetalleCasoScreen
 import com.duoc.securitysjapp.ui.InicioScreen
@@ -44,23 +47,27 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Inicializa la Base de Datos Room
+        // Inicializa los repositorios locales y remotos.
         val database = AppDatabase.getDatabase(applicationContext)
-        // Repositorios de datos: reciben el DAO correspondiente
-        val usuarioRepository = UsuarioRepository(database.usuarioDao())
-        val casoRepository = CasoRepository(database.casoDao())
-        // Repositorios del dispositivo: reciben el contexto de la app
-        val sesionRepository = SesionRepository(applicationContext) // sesión iniciada
+        val sesionRepository = SesionRepository(applicationContext)
+        val xanoRepository = XanoRepository(RetrofitInstance.api)
+        // AuthUsuarios tiene una URL base propia, independiente de la API TEVEO.
+        val usuarioRepository = UsuarioRepository(
+            database.usuarioDao(),
+            xanoRepository,
+            AuthRetrofitInstance.api,
+            sesionRepository
+        )
+        val casoRepository = CasoRepository(database.casoDao(), xanoRepository, usuarioRepository)
+        // Repositorios del dispositivo: reciben el contexto de la app.
         val fotoRepository = FotoRepository(applicationContext) // fotos guardadas como archivo
         val ubicacionRepository = UbicacionRepository(applicationContext) // GPS
         // Factories para inyectar los repositorios en los ViewModels
         val usuarioViewModelFactory = UsuarioFormViewModelFactory(usuarioRepository)
         val profileViewModelFactory = ProfileViewModelFactory(usuarioRepository, fotoRepository)
 
-        // Si hay una sesión guardada se abre el menú de inicio; si no, el login.
-        // El id del usuario guardado llega a "inicio" por el valor por defecto de su argumento
-        val usuarioGuardadoId = sesionRepository.obtenerUsuarioId()
-        val startDestination = if (usuarioGuardadoId != SesionRepository.SIN_SESION) "inicio/{usuarioId}" else "login"
+        // Siempre se inicia por login: esta pantalla valida el JWT guardado contra Xano.
+        val startDestination = "login"
 
         setContent {
             SecuritySJAppTheme {
@@ -86,7 +93,7 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onLoginExitoso = { usuarioId ->
-                                    // Guarda la sesión para no pedir el login la próxima vez
+                                    // El token ya quedó cifrado en SesionRepository; aquí se conserva el ID local.
                                     sesionRepository.guardarSesion(usuarioId)
 
                                     // Entra al menú de inicio con el id del usuario logueado
@@ -117,8 +124,8 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument("usuarioId") {
                                     type = NavType.IntType
-                                    // Si la app abre con la sesión guardada, el id viene de aquí
-                                    defaultValue = usuarioGuardadoId
+                                    // La ruta siempre recibe el ID local recuperado por el login o /auth/me.
+                                    defaultValue = SesionRepository.SIN_SESION
                                 }
                             )
                         ) { backStackEntry ->

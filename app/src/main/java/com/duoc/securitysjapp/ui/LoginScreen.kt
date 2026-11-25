@@ -28,6 +28,11 @@ fun LoginScreen(
     val errorContrasena by viewModel.errorContrasenaLogin.collectAsState()
     val errorGeneral by viewModel.errorGeneralLogin.collectAsState()
 
+    // Al abrir el login, comprueba si existe un token válido guardado.
+    LaunchedEffect(Unit) {
+        viewModel.restaurarSesion()
+    }
+
     LaunchedEffect(loginEstado) {
         if (loginEstado == true) {
             val id = viewModel.usuarioId.value

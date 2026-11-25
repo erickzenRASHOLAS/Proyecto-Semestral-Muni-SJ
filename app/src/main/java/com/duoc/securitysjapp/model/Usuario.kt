@@ -11,7 +11,8 @@ data class Usuario(
     val correo: String,
     val contrasena: String,
     val rol:String,
-    val fotoRuta: String? = null
+    val fotoRuta: String? = null,
+    val xanoId: Long? = null // ID del perfil en Xano
 )
 
 // Roles de usuario

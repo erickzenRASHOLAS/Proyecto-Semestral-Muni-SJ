@@ -36,6 +36,12 @@ class DetalleCasoViewModel(
 
     private var usuarioActual by mutableStateOf<Usuario?>(null)
 
+    var mensajeCierre by mutableStateOf<String?>(null)
+        private set
+
+    var cerrandoCaso by mutableStateOf(false)
+        private set
+
     // Solo el creador del caso o un perfil municipal puede cambiar el estado
     val puedeCambiarEstado: Boolean
         get() {
@@ -65,14 +71,26 @@ class DetalleCasoViewModel(
         }
     }
 
-    // Cambia el estado a "Cerrado" y avisa cuando ya quedó guardado
+    // Cierra el caso y solo navega cuando Xano también registra el historial.
     fun cerrarCaso(onCerrado: () -> Unit) {
         val actual = caso ?: return
-        if (!puedeCambiarEstado) return
+        if (!puedeCambiarEstado || cerrandoCaso) return
         viewModelScope.launch {
-            casoRepository.cerrarCaso(actual)
-            caso = casoRepository.getById(casoId)
-            onCerrado()
+            cerrandoCaso = true
+            mensajeCierre = null
+            try {
+                val resultado = casoRepository.cerrarCaso(actual, usuarioId)
+                caso = casoRepository.getById(casoId)
+                if (resultado.actualizadoEnXano && resultado.historialRegistrado) {
+                    onCerrado()
+                } else {
+                    mensajeCierre = resultado.error ?: "No se pudo completar la sincronización del cierre."
+                }
+            } catch (error: Exception) {
+                mensajeCierre = "No se pudo cerrar el caso: ${error.message ?: "Error inesperado"}"
+            } finally {
+                cerrandoCaso = false
+            }
         }
     }
 

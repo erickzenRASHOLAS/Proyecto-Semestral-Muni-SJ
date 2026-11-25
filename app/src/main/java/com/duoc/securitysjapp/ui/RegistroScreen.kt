@@ -30,6 +30,7 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
     val errorNombre by viewModel.errorNombre.collectAsState()
     val errorCorreo by viewModel.errorCorreo.collectAsState()
     val errorContrasena by viewModel.errorContrasena.collectAsState()
+    val errorGeneral by viewModel.errorGeneralRegistro.collectAsState()
 
     LaunchedEffect(registroEstado) {
         if (registroEstado == true) {
@@ -47,6 +48,7 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
             onValueChange = {
                 nombreCompleto = it
                 if (errorNombre != null) viewModel.limpiarErrorNombre()
+                if (errorGeneral != null) viewModel.limpiarErrorGeneralRegistro()
             },
             label = { Text("Nombre completo") },
             // Ícono de persona al inicio del campo
@@ -68,6 +70,7 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
             onValueChange = {
                 correo = it
                 if (errorCorreo != null) viewModel.limpiarErrorCorreo()
+                if (errorGeneral != null) viewModel.limpiarErrorGeneralRegistro()
             },
             label = { Text("Correo electrónico") },
             // Ícono de carta al inicio del campo
@@ -90,6 +93,7 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
             onValueChange = {
                 contrasena = it
                 if (errorContrasena != null) viewModel.limpiarErrorContrasena()
+                if (errorGeneral != null) viewModel.limpiarErrorGeneralRegistro()
             },
             label = { Text("Contraseña") },
             // Ícono de candado al inicio del campo
@@ -113,17 +117,31 @@ fun RegistroScreen(viewModel: UsuarioFormViewModel, onRegistroExitoso: () -> Uni
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
                 selected = rol == ROL_VECINO,
-                onClick = { rol = ROL_VECINO },
+                onClick = {
+                    rol = ROL_VECINO
+                    if (errorGeneral != null) viewModel.limpiarErrorGeneralRegistro()
+                },
                 enabled = !cargando
             )
             Text(text = ROL_VECINO)
             Spacer(modifier = Modifier.width(16.dp))
             RadioButton(
                 selected = rol == ROL_MUNICIPAL,
-                onClick = { rol = ROL_MUNICIPAL },
+                onClick = {
+                    rol = ROL_MUNICIPAL
+                    if (errorGeneral != null) viewModel.limpiarErrorGeneralRegistro()
+                },
                 enabled = !cargando
             )
             Text(text = ROL_MUNICIPAL)
+        }
+        if (errorGeneral != null) {
+            Text(
+                text = errorGeneral!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
         Spacer(modifier = Modifier.height(16.dp))
 

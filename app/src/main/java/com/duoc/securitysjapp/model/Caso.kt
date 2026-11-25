@@ -15,5 +15,7 @@ data class Caso(
     val estado: String = "En derivación",
     val fotoRuta: String? = null, // Evidencia fotográfica del caso
     val latitud: Double? = null, // Coordenadas GPS (null si no se dio permiso de ubicación)
-    val longitud: Double? = null
+    val longitud: Double? = null,
+    val xanoId: Long? = null, // ID del caso en Xano
+    val xanoUsuarioId: Long? = null // ID del usuario creador en Xano
 )
